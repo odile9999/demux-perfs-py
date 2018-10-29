@@ -23,7 +23,7 @@
 import os, csv
 import numpy as np
 import matplotlib.pyplot as plt
-from datetime import datetime, date
+from datetime import datetime
 
 # -----------------------------------------------------------------------
 def get_conf():
@@ -170,7 +170,7 @@ def plot_hk(hk, fulldirname, config):
     n_valid_hk = 0
     for key in hk.keys():
         if key[0:8]!='DRE_Hks_':
-           n_valid_hk = n_valid_hk+1 
+            n_valid_hk = n_valid_hk+1 
 
     n_valid_hk = n_valid_hk-1 # Date does not count as an HK
 

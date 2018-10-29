@@ -1,9 +1,9 @@
 # -----------------------------------------------------------------------------
 # Imports
 import numpy as np
-import matplotlib, os
+import os
 import matplotlib.pyplot as plt
-from DEMUX_TBox.get_data import readIQ, readfile
+import get_data
 
 # -----------------------------------------------------------------------
 def get_files_freq(fulldirname, dumptype):
@@ -123,7 +123,7 @@ def process_GBW(fulldirname, config, dumptype, chan):
         print('Processing file {0:3d}/{1:3d} '.format(file_nb, nfiles), end='')
         print(fich)
         if dumptype=="IQ-ALL":
-            Chan0_i, Chan0_q, Chan1_i, Chan1_q, FLAG_ERROR = readIQ(os.path.join(datadirname, fich))
+            Chan0_i, Chan0_q, Chan1_i, Chan1_q, 0 = get_data.readIQ(os.path.join(datadirname, fich))
             if chan==0:
                 modulus = \
                     np.sqrt(Chan0_i[:,pix_test].astype('float')**2 + Chan0_q[:,pix_test].astype('float')**2)
@@ -131,7 +131,7 @@ def process_GBW(fulldirname, config, dumptype, chan):
                 modulus = \
                     np.sqrt(Chan1_i[:,pix_test].astype('float')**2 + Chan1_q[:,pix_test].astype('float')**2)    
         else: # dumptype="IQ-TEST"
-            data, dump_id = readfile(os.path.join(datadirname, fich))
+            data, 0 = get_data.readfile(os.path.join(datadirname, fich))
             modulus = np.sqrt(data[1:,0].astype('float')**2 + data[1:,1].astype('float')**2)
 
         amplitudes[file_nb]=np.max(modulus)-np.min(modulus)

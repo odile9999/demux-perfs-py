@@ -1,8 +1,8 @@
 import numpy as np
-from numpy.fft import rfft, fft
-import matplotlib, os
+from numpy.fft import rfft
+import os
 import matplotlib.pyplot as plt
-from DEMUX_TBox.get_data import readfile, readIQ
+import get_data
 
 # -----------------------------------------------------------------------------
 def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
@@ -56,8 +56,8 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     plotfilenameC = os.path.join(plotdirname, "PLOT_DUMP_" + NameC + ".png")
 
     # Getting the data from dump file
-    data, dumptype = readfile(dumpfilename)
-    data2, dumptype2 = readfile(dumpfilename2)
+    data, = get_data.readfile(dumpfilename)
+    data2, = get_data.readfile(dumpfilename2)
 
     channel=int(data[0, 1]/2**12)
     a=data[1:,0]
@@ -678,8 +678,7 @@ def get_Cf_and_FSRoverPeakPeak_from_file(fulldirname, quiet=True):
 
     filename = os.path.join(fulldirname, dumpfilenames[0])
 
-    FSR_over_PeakPeak = 1.
-    data, dumptype = readfile(filename)
+    data, = get_data.readfile(filename)
     feedback = data[1:,1]
     Cf = crestfactor(feedback)
     PeakPeak = 2.*max(abs(feedback))
@@ -755,8 +754,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
                 and f[i_test_deb:i_test_fin]==test]
 
     # definning file length
-    Chan0_i, Chan0_q, Chan1_i, Chan1_q, FLAG_ERROR = readIQ(os.path.join(datadirname, fichlist[0]))
-    Chan1_i = Chan1_q = 0
+    Chan0_i, Chan0_q, 0, 0, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fichlist[0]))
     npts = len(Chan0_i[:,0])
     print('Npts:', npts)
     npts=min(npts_max, 2**np.int(np.log(npts)/np.log(2)))
@@ -784,7 +782,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
         file+=1
         print('Processing file {0:3d}/{1:3d} '.format(file, nfiles), end='')
         print(fich)
-        Chan0_i, Chan0_q, Chan1_i, Chan1_q, FLAG_ERROR = readIQ(os.path.join(datadirname, fich))
+        Chan0_i, Chan0_q, 0, 0, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fich))
         npts_current = len(Chan0_i[:,0])
         if FLAG_ERROR:
             errors_counter += 1
