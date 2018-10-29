@@ -754,7 +754,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
                 and f[i_test_deb:i_test_fin]==test]
 
     # definning file length
-    Chan0_i, Chan0_q, 0, 0, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fichlist[0]))
+    Chan0_i, Chan0_q, _, _, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fichlist[0]))
     npts = len(Chan0_i[:,0])
     print('Npts:', npts)
     npts=min(npts_max, 2**np.int(np.log(npts)/np.log(2)))
@@ -782,7 +782,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
         file+=1
         print('Processing file {0:3d}/{1:3d} '.format(file, nfiles), end='')
         print(fich)
-        Chan0_i, Chan0_q, 0, 0, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fich))
+        Chan0_i, Chan0_q, _, _, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fich))
         npts_current = len(Chan0_i[:,0])
         if FLAG_ERROR:
             errors_counter += 1

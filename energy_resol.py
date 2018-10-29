@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit
 def get_test_pix(filename):
 
     pix_test=40
-    Chan0_i, Chan0_q, 0, 0, 0 = get_data.readIQ(filename)
+    Chan0_i, Chan0_q, _, _, _ = get_data.readIQ(filename)
     modulus = \
         np.sqrt(Chan0_i[:,pix_test].astype('float')**2 + Chan0_q[:,pix_test].astype('float')**2)
 
@@ -49,13 +49,13 @@ def meas_energy_r(fulldirname, config):
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat'\
                 and f[i_type_deb:i_type_fin]=="_ER-Noise"]
-    0, noise = get_test_pix(os.path.join(datadirname, noise_name[0]))
+    _, noise = get_test_pix(os.path.join(datadirname, noise_name[0]))
 
     pulse_name = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat'\
                 and f[i_type_deb:i_type_fin]=="_ER-Pulse"]
-    0, pulse = get_test_pix(os.path.join(datadirname, pulse_name[0]))
+    _, pulse = get_test_pix(os.path.join(datadirname, pulse_name[0]))
 
 
     offset=np.mean(noise)
@@ -199,7 +199,7 @@ def meas_energy_r(fulldirname, config):
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat'\
                 and f[i_type_deb:i_type_fin]=="_ER-Obser"]
-    0, observ = get_test_pix(os.path.join(datadirname, observ_name[0]))
+    _, observ = get_test_pix(os.path.join(datadirname, observ_name[0]))
     observ=offset-observ
 
     data = observ
@@ -269,7 +269,7 @@ def meas_energy_r(fulldirname, config):
 
     ax4 = fig.add_subplot(2, 2, 2)
     #ax4.hist(Ecor1, nbins)
-    n, 0, 0 = ax4.hist(Ecor1, nbins, density=False, facecolor='g', alpha=0.75)
+    n, _, _ = ax4.hist(Ecor1, nbins, density=False, facecolor='g', alpha=0.75)
     sum1 = np.sum(n)/nbins
     max_gauss1 = gauss_fit(ax4, Ecor1, sum1, n_pulse)
     ax4.axis([Emin, Emax, 0, Emaxrange])
@@ -285,7 +285,8 @@ def meas_energy_r(fulldirname, config):
 
     ax6 = fig.add_subplot(2, 2, 4)
     #ax6.hist(Ecor2, nbins)
-    n, 0, 0 = ax6.hist(Ecor2, nbins, density=False, facecolor='b', alpha=0.75)
+    n, _, _ = ax6.hist(Ecor2, nbins, density=False, facecolor='b', alpha=0.75)
+    
     sum1 = np.sum(n)/nbins
     max_gauss2 = gauss_fit(ax6, Ecor2, sum1, n_pulse)
     ax6.set_ylabel(r'Counts')
@@ -311,11 +312,11 @@ def gauss_fit(ax, E, sum1, counts):
     hist, bin_edges = np.histogram(E, density=True)
     bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
 
-    0, 0, npts = np.min(E), np.max(E), 100
+    npts = 100
     xE = (np.arange(npts)-npts/2) * (max-min)/npts + (max+min)/2
     # p0 is the initial guess for the fitting coefficients (A, mu and sigma above)
     p0 = [10., 7000., 1.]
-    coeff, 0 = curve_fit(gauss, bin_centres, hist, p0=p0)
+    coeff, _ = curve_fit(gauss, bin_centres, hist, p0=p0)
     # Get the fitted curve
     hist_fit = gauss(xE, *coeff)
     sum2 = np.sum(hist_fit)/npts
