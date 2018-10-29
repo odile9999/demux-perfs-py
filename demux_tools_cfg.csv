@@ -1,0 +1,10 @@
+path_tests;/Users/laurent/Documents/projets/Athena/Data/DUMPS
+dir_data;DATA
+dir_hk;HK/HKcsv
+dir_plots;PLOTS
+dir_logs;LOGS
+ScBandMin;10
+ScBandMax;560
+SNR_pix;-131,4
+DRD;-166
+Cf;4,5
