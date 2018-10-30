@@ -56,8 +56,8 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     plotfilenameC = os.path.join(plotdirname, "PLOT_DUMP_" + NameC + ".png")
 
     # Getting the data from dump file
-    data, = get_data.readfile(dumpfilename)
-    data2, = get_data.readfile(dumpfilename2)
+    data, _ = get_data.readfile(dumpfilename)
+    data2, _ = get_data.readfile(dumpfilename2)
 
     channel=int(data[0, 1]/2**12)
     a=data[1:,0]
@@ -678,7 +678,7 @@ def get_Cf_and_FSRoverPeakPeak_from_file(fulldirname, quiet=True):
 
     filename = os.path.join(fulldirname, dumpfilenames[0])
 
-    data, = get_data.readfile(filename)
+    data, _ = get_data.readfile(filename)
     feedback = data[1:,1]
     Cf = crestfactor(feedback)
     PeakPeak = 2.*max(abs(feedback))
