@@ -70,6 +70,9 @@ def readfile(dumpfilename, Quiet=True):
     data=np.fromfile(fdat, dtype='<h')
     fdat.close()
     
+    if len(data) > 2e9 :
+        data = data[:len(data)//2]
+    
     DADA=-9510      # 0xDADA interpreted as int16
     if data[0] != DADA:
         raise ValueError('Problem with file format!')

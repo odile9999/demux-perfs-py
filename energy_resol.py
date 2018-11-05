@@ -312,7 +312,7 @@ def gauss_fit(ax, E, sum1, counts):
     hist, bin_edges = np.histogram(E, density=True)
     bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
 
-    npts = 100
+    min, max, npts = np.min(E), np.max(E), 100
     xE = (np.arange(npts)-npts/2) * (max-min)/npts + (max+min)/2
     # p0 is the initial guess for the fitting coefficients (A, mu and sigma above)
     p0 = [10., 7000., 1.]
