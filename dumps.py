@@ -565,22 +565,27 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
 
     npts = len(sptdB[0,:])
     f=np.arange(npts)*fs/(2*npts)
-    SNR_pix = config['SNR_pix']
+    Impact_2_DACs = 3    # Because the test set-up involves two DACs (bias and feedback)
+    Impact_non_stationarity = 20*np.log10(1.4) # Because our test set-up does not reproduce the TES non-stationarity 
+    Impact_BBFB = 3  # BBFB adds 3 dB noise (TBC)
+    SNR_pix_min = config['SNR_pix'] + Impact_2_DACs + Impact_non_stationarity
+    SNR_pix_max = SNR_pix_min + Impact_BBFB
     Carrier_vs_FS_dB=20*np.log10(FSR_over_PeakPeak*2*Cf*np.sqrt(40))
     ScBandMin = config['ScBandMin'] 
     ScBandMax = config['ScBandMax'] 
-    BW_res_warn = r'Applied BW res. correction factor: {0:4.2f}dB'.format(BW_correction_factor_dB)
+    BW_res_warn = r'A BW res. correction factor of {0:4.2f}dB has been applied on the spectra. It shall be corrected for spurious measurements.'.format(BW_correction_factor_dB)
 
     # Plot for zoom pixel only
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1)
     ax.semilogx(f[1:], sptdB[pix_zoom,1:])
-    ax.semilogx([ScBandMin, ScBandMax], [SNR_pix, SNR_pix], ':r', linewidth=3)
-    ax.semilogx([ScBandMin, ScBandMin], [SNR_pix, 0], ':r', linewidth=3)
-    ax.semilogx([ScBandMax, ScBandMax], [SNR_pix, 0], ':r', linewidth=3)
-    ax.text(25, -17, r'band of interest')
-    ax.text(15, -140, r'DRD requirement level')
-    ax.text(2, -159, BW_res_warn, fontsize=12)
+    ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_min, SNR_pix_min], ':r', linewidth=3)
+    ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_max, SNR_pix_max], ':r', linewidth=3)
+    ax.semilogx([ScBandMin, ScBandMin], [SNR_pix_min, 0], ':r', linewidth=3)
+    ax.semilogx([ScBandMax, ScBandMax], [SNR_pix_min, 0], ':r', linewidth=3)
+    ax.text(40, -17, r'band of interest', fontsize=11)
+    ax.text(ScBandMin, SNR_pix_min-5, r'DRD requirement level', fontsize=11)
+    ax.text(1.5, -159, BW_res_warn, fontsize=11)
     L1, L2=100, 2.5
     ax.arrow(ScBandMin, -20, ScBandMax-L1, 0, head_width=3, head_length=L1, fc='k', ec='k')
     ax.arrow(ScBandMax, -20, -ScBandMax+ScBandMin+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
@@ -619,9 +624,10 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
     for box in range(n_boxes):
         ax = fig.add_subplot(n_lines, n_cols, box+1)
         ax.semilogx(f[1:], sptdB[box,1:])
-        ax.semilogx([ScBandMin, ScBandMax], [SNR_pix, SNR_pix], ':r')
-        ax.semilogx([ScBandMin, ScBandMin], [SNR_pix, 0], ':r')
-        ax.semilogx([ScBandMax, ScBandMax], [SNR_pix, 0], ':r')
+        ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_min, SNR_pix_min], ':r')
+        ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_max, SNR_pix_max], ':r')
+        ax.semilogx([ScBandMin, ScBandMin], [SNR_pix_min, 0], ':r')
+        ax.semilogx([ScBandMax, ScBandMax], [SNR_pix_min, 0], ':r')
         ax.axis([f[1], f[-1], -160, 0])
         ax.grid(color='k', linestyle=':', linewidth=0.5)
         ax.set_title(r'Pixel {0:2d}'.format(box))
@@ -645,9 +651,10 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
         for box in range(n_boxes):
             ax = fig.add_subplot(n_lines, n_cols, box+1)
             ax.semilogx(f[1:], sptdB[box,1:])
-            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix, SNR_pix], ':r')
-            ax.semilogx([ScBandMin, ScBandMin], [SNR_pix, 0], ':r')
-            ax.semilogx([ScBandMax, ScBandMax], [SNR_pix, 0], ':r')
+            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_min, SNR_pix_min], ':r')
+            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_max, SNR_pix_max], ':r')
+            ax.semilogx([ScBandMin, ScBandMin], [SNR_pix_min, 0], ':r')
+            ax.semilogx([ScBandMax, ScBandMax], [SNR_pix_min, 0], ':r')
             ax.axis([f[1], 1e3, -160, 0])
             ax.grid(color='k', linestyle=':', linewidth=0.5)
             ax.set_title(r'Pixel {0:2d}'.format(box))
@@ -771,8 +778,8 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
     # Factor to correct the resolution BW effect on noise
     BW_correction_factor_dB=10*np.log10(duration)
     print("Scan duration is about: {0:6.4f}".format(duration))
-    print("WARNING, a bandwidth correction factor of {0:6.4f}dB is applied on the spectra. \
-    This offset needs to be taken into account when considering spurious values".format(BW_correction_factor_dB))
+    print("WARNING, a bandwidth correction factor of {0:6.4f}dB is applied on the spectra.".format(BW_correction_factor_dB))
+    print("This offset needs to be taken into account when considering spurious values.")
 
     spt0dB=np.zeros((npix, npts//2+1))
     total_spt0=np.zeros((npix, npts//2+1))
