@@ -39,7 +39,7 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     nbc, NameC = 16, "BIAS" # BIAS signal over 16 bits
 
     f_type_deb, f_type_fin = 21, 27
-    dumpfilenames = [f for f in os.listdir(datadirname) \
+    dumpfilenames1 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat'\
                 and f[f_type_deb:f_type_fin]=="IN-FBK"]
@@ -48,7 +48,7 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
                 and f[-4:]=='.dat'\
                 and f[f_type_deb:f_type_fin]=="IN-BIA"]
 
-    dumpfilename = os.path.join(datadirname, dumpfilenames[0])
+    dumpfilename1 = os.path.join(datadirname, dumpfilenames1[0])
     dumpfilename2 = os.path.join(datadirname, dumpfilenames2[0])
     logfilename  = os.path.join(fulldirname, "dumps.log")
     plotfilenameA = os.path.join(plotdirname, "PLOT_DUMP_" + NameA + ".png")
@@ -56,12 +56,12 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     plotfilenameC = os.path.join(plotdirname, "PLOT_DUMP_" + NameC + ".png")
 
     # Getting the data from dump file
-    data, _ = get_data.readfile(dumpfilename)
+    data1, _ = get_data.readfile(dumpfilename1)
     data2, _ = get_data.readfile(dumpfilename2)
 
-    channel=int(data[0, 1]/2**12)
-    a=data[1:,0]
-    b=data[1:,1]
+    channel=int(data1[0, 1]/2**12)
+    a=data1[1:,0]
+    b=data1[1:,1]
     c=data2[1:,1]
  
     nval=len(a)
@@ -87,10 +87,12 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
 =============================================================================\n\
 =================================  DUMP ANALISYS ============================\n\
 =============================================================================\n\
-Dump file name--------> ' + dumpfilename + ' \n\
+Dump file name--------> ' + dumpfilename1 + ' \n\
+                        ' + dumpfilename2 + ' \n\
 Log file name---------> ' + logfilename + ' \n\
 Plots saved in files--> ' + plotfilenameA + ' \n\
                         ' + plotfilenameB + ' \n\
+                        ' + plotfilenameC + ' \n\
 Channel---------------> {0:2d}\n\
 \n'.format(channel)
 
@@ -122,7 +124,7 @@ Bandwidth factor wrt 1Hz---------> {1:6.2f} db\n\
     if np.max(np.abs(a))==0:
         print("Data stream A is empty!")
     else:
-        print("Processing datastream A...")
+        print("Processing datastream of INPUT signal...")
         afdb, a_carriers, a_Noise_Power, io_str5 = makeanalysis(a, f_res, nba, config)
         if len(a_carriers) == 0:
             a_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
@@ -144,7 +146,7 @@ Bandwidth factor wrt 1Hz---------> {1:6.2f} db\n\
     if np.max(np.abs(b))==0:
         print("Data stream B is empty!")
     else:
-        print("Processing datastream B...")
+        print("Processing datastream of FEEDBACK signal...")
         bfdb, b_carriers, b_Noise_Power, io_str6 = makeanalysis(b, f_res, nbb, config)
         if len(b_carriers) == 0:
             b_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
@@ -166,17 +168,17 @@ Bandwidth factor wrt 1Hz---------> {1:6.2f} db\n\
     if np.max(np.abs(c))==0:
         print("Data stream C is empty!")
     else:
-        print("Processing datastream C...")
-        cfdb, c_carriers, c_Noise_Power, io_str5 = makeanalysis(c, f_res, nbc, config)
+        print("Processing datastream of BIAS signal...")
+        cfdb, c_carriers, c_Noise_Power, io_str7 = makeanalysis(c, f_res, nbc, config)
         if len(c_carriers) == 0:
             c_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
                                             # defined at 1MHz just to define a 
                                             # focus for the plot
-        io_str5 = '\
+        io_str7 = '\
 == Measurements on data stream ' + NameC + '\n\
 =============================================================================\n'\
-        + io_str5
-        flog.write(io_str5)
+        + io_str7
+        flog.write(io_str7)
         plot_strC = "Signal "+ NameC + "  " + plot_str
         fmin = (c_carriers[0] - config['ScBandMax']) / 1e6
         fmax = (c_carriers[0] + config['ScBandMax']) / 1e6
@@ -184,7 +186,7 @@ Bandwidth factor wrt 1Hz---------> {1:6.2f} db\n\
                   plot_strC, plotfilenameC)
  
     flog.close()
- 
+
     print("Done!")
     print("------------------------------------")
 # -----------------------------------------------------------------------------
@@ -228,8 +230,6 @@ def makeanalysis(sig, df, nb, config):
     nval=len(sig)
     #######################################################################
     # Computation of fft
-    #sigf = rfft((sig - np.mean(sig)) * blackman(nval))
-    #sigf = abs(rfft(sig - np.mean(sig)))
     sigf = abs(rfft(sig))
      
     #######################################################################
@@ -244,7 +244,9 @@ def makeanalysis(sig, df, nb, config):
     # Power obtained in frequency domain (to be corrected for)
     Ef_db = 10*np.log10(np.sum(sigf.astype(float)**2))
 
-    sigfdb = 20*np.log10(sigf) - Ef_db + Et_db - Efsr_db
+    sigfdb = -300.*np.ones(len(sigf))
+    inotzero = np.where(sigf != 0)[0]
+    sigfdb[inotzero] = 20*np.log10(sigf[inotzero]) - Ef_db + Et_db - Efsr_db
 
     ##### Noise power measurement around each carriers
     fcarriers=np.array([])
@@ -254,7 +256,7 @@ def makeanalysis(sig, df, nb, config):
         icarriers = peakdetect(sigfdb)
         fcarriers = icarriers*df
         ncar=len(fcarriers)
-        print(" => {0:3d} carriers detected. \nCarrier frequencies (HZ):".format(ncar))
+        print(" => {0:3d} carriers detected. \nCarrier frequencies (Hz):".format(ncar))
         freq_str, power_str =  " > ",  " > "
         if ncar > 0 and ncar < 80:
             for carrier in range(ncar):
@@ -434,14 +436,17 @@ def peakdetect(sig, margin=6):
         array([ 5,  9,  23, ...,  102,  143,  340])
 
         """
-    ithreshold = np.where(sig > max(sig) - margin)
+    # First look for maximum areas
+    ithreshold = np.where(sig > max(sig) - margin)[0]
+
+    # Then look for local maxima in each area
     derivative1 = sig[1:] - sig[:-1]
-    i_zero = np.where(derivative1 == 0)               # To avoid division
-    derivative1[i_zero[0]] = derivative1[i_zero[0]-1] # by 0 at the next step.
+    i_zero = np.where(derivative1 == 0)[0]       # To avoid division
+    derivative1[i_zero] = 1                      # by 0 at the next step.
     derivative2 = derivative1 / abs(derivative1) # keeps only +1 and -1
-    pic = derivative2[:-1] - derivative2[1:]
-    i = np.where(pic[ithreshold[0]-1] == 2)
-    return(ithreshold[0][i[0]])
+    pic = derivative2[:-1] - derivative2[1:]     # equals 2 at local maxima
+    i = np.where(pic[ithreshold-1] == 2)[0]
+    return(ithreshold[i])
 
 # -----------------------------------------------------------------------------
 def crestfactor(signal):
@@ -506,9 +511,13 @@ def noiseandspurpower(sigf, indexes, df, config):
         r_side_1 = index + int(np.ceil(config['ScBandMin']/df))
         r_side_2 = index + int(np.ceil(config['ScBandMax']/df))
         #npts = l_side_2-l_side_1 + r_side_2-r_side_1
-        Powers[k] = 10*np.log10(np.sum(sigf.astype(float)[l_side_1:l_side_2]**2) \
-                    + np.sum(sigf.astype(float)[r_side_1:r_side_2]**2))
-    return(Powers)
+        Powers[k] = np.sum(sigf.astype(float)[l_side_1:l_side_2]**2) \
+                    + np.sum(sigf.astype(float)[r_side_1:r_side_2]**2)
+
+    PowersdB=-1*np.inf*np.ones(len(Powers))
+    inotzero=np.where(Powers != 0)[0]
+    PowersdB[inotzero] = 10*np.log10(Powers[inotzero])
+    return(PowersdB)
 
 # -----------------------------------------------------------------------
 def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe, BW_correction_factor_dB, pix_zoom=40, SR=False):
@@ -804,7 +813,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
 
     print("Data processing is done.")
     print("{0:4d} corrupted files found.".format(errors_counter))
-    print("{0:4d} files where too short for processing.".format(nb_short_files))
+    print("{0:4d} files were too short for processing.".format(nb_short_files))
     print("Doing the plots...", end='')
  
     if not CHAN0_EMPTY:            
