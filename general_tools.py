@@ -169,7 +169,7 @@ def plot_hk(hk, fulldirname, config):
     # detection of valid hks
     n_valid_hk = 0
     for key in hk.keys():
-        if key[0:8]!='DRE_Hks_':
+        if key[0:8]!='DRE_Hks_' and key[1:9]!='DRE_Hks_':
             n_valid_hk = n_valid_hk+1 
 
     n_valid_hk = n_valid_hk-1 # Date does not count as an HK

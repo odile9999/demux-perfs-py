@@ -1,6 +1,6 @@
 path_tests;F:\DRE_TESTS
 dir_data;DATA
-dir_hk;HK/HKcsv
+dir_hk;HK
 dir_plots;PLOTS
 dir_logs;LOGS
 ScBandMin;10
