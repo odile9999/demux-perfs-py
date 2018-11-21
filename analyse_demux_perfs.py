@@ -17,6 +17,6 @@ from process_demux_proto_tests import process_demux_proto_tests
 #dirname = '2018-11-16_11.52.34__no_spread'
 #dirname = '2018-11-16_16.44.40__FB_trunc=2'
 #dirname = '2018-11-16_17.08.47__FB_trunc=4'
-dirname = '2018-11-16_17.26.50__FB_trunc=3'
+dirname = '2018-11-19_16.41.35__validation du fw0100'
 
 process_demux_proto_tests(dirname)
