@@ -107,6 +107,7 @@ def get_hk(fulldirname, config):
 
     if not os.path.exists(hkfullfilename):
         print("Hk file not found.")
+        hk=0
     else:
         with open(hkfullfilename, newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar='|')

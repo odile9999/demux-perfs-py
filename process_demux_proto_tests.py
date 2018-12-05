@@ -13,7 +13,8 @@ def process_demux_proto_tests(dirname):
     # -----------------------------------------------------------------------
     # Processing of hk files 
     hk = general_tools.get_hk(fulldirname, config)
-    general_tools.plot_hk(hk, fulldirname, config)
+    if hk != 0:
+        general_tools.plot_hk(hk, fulldirname, config)
  
     # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
