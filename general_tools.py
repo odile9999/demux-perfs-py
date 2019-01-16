@@ -103,12 +103,11 @@ def get_hk(fulldirname, config):
     hkfilename = [f for f in os.listdir(hkdirname) \
             if os.path.isfile(os.path.join(hkdirname, f)) \
             and f[-4:]=='.csv']
-    hkfullfilename=os.path.join(hkdirname, hkfilename[0])
-
-    if not os.path.exists(hkfullfilename):
+    if len(hkfilename) == 0:
         print("Hk file not found.")
-        hk=0
+        hk = 0
     else:
+        hkfullfilename=os.path.join(hkdirname, hkfilename[0])
         with open(hkfullfilename, newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar='|')
 

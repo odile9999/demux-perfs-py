@@ -146,7 +146,7 @@ def process_GBW(fulldirname, config, dumptype, chan):
     GBW_max = 18e3
     FSsur2 = fs/(2*2**7)
 
-    i_gain_deb, i_gain_fin = 46, 48
+    i_gain_deb, i_gain_fin = 46, -4
     gainDRE = fichlist[0][i_gain_deb: i_gain_fin]
 
     if GBW > GBW_min and GBW < GBW_max:

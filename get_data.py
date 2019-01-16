@@ -172,3 +172,69 @@ def check_data(DADA_ch0, DADA_ch1, Chan0_ID, Chan1_ID):
     return(FLAG_ERROR)
 
 # -----------------------------------------------------------------------------
+def readEvents(eventsfilename):
+    r"""
+        This function reads events binary files
+
+        Parameters
+        ----------
+        eventsfilename : string
+        The name of the dump file (with the path and the extension)
+
+        Returns
+        -------
+        timestamp : array
+        photon start time (s)
+
+        pixelId : array
+        pixel which measured the photon
+
+        energy : array
+        energy of the photon (eV)
+
+        offset : array
+        value of the baseline measured before the event
+        """
+    
+    fdat=open(eventsfilename, 'rb')
+    dt=np.dtype([('timestamp', np.float), \
+                 ('pixelId', np.int8), \
+                 ('energy', np.float32), \
+                 ('offset', np.float32)])
+                                  
+    eventList=np.fromfile(fdat, dtype=dt)
+    fdat.close()
+    
+    return(eventList[:]['timestamp'], eventList[:]['pixelId'], eventList[:]['energy'], eventList[:]['offset'])
+
+# -----------------------------------------------------------------------------
+
+def readSpectrum(eventsfilename):
+    r"""
+        This function reads binary spectrum files
+
+        Parameters
+        ----------
+        spectrumfilename : string
+        The name of the dump file (with the path and the extension)
+
+        Returns
+        -------
+        energy : array
+        Hystogram (eV)
+
+        count : array
+        Hystogram count (count)
+
+        """
+    
+    fdat=open(eventsfilename, 'rb')
+    dt=np.dtype([('energy', np.float32), \
+                 ('count', np.int32)])
+                                  
+    hystogram=np.fromfile(fdat, dtype=dt)
+    fdat.close()
+    
+    return(hystogram[:]['energy'], hystogram[:]['count'])
+
+# -----------------------------------------------------------------------------
