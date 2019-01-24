@@ -25,11 +25,20 @@ def meas_energy_r(fulldirname, config):
     events_name = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f=='events.dat']
-    _, _, energy, _ = get_data.readEvents(os.path.join(datadirname, events_name[0]))
+    time_stamps, _, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]))
 
-    # Making the plot
+    # Making the histogram plot
     fit.hist_and_fit(energy,fit.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None, out=True)
 
+    # Making the baseline plot
+    fig = plt.figure(figsize=(9, 5))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.plot(time_stamps, baseline)
+    ax.set_ylabel(r'Time (s)')
+    ax.set_xlabel(r'Baseline (% of FSR)')
+    fig.tight_layout()
+    plt.savefig(pltfilename+'_BASELINE.png', bbox_inches='tight')
+   
 
 #------------------------------------------------------------------------------
 def plot_GSE_spectrum(fulldirname, config, Emin, Emax):
@@ -61,4 +70,4 @@ def plot_GSE_spectrum(fulldirname, config, Emin, Emax):
     fig.tight_layout()
     plt.savefig(pltfilename+'.png', bbox_inches='tight')
 
-# -----------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
