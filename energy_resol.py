@@ -28,16 +28,26 @@ def meas_energy_r(fulldirname, config):
     
     if len(events_name)>0:
         time_stamps, _, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]))
-
+        time_sec = time_stamps / (config['fs']/config['power_to_fs2'])
         # Making the histogram plot
         fit.hist_and_fit(energy,fit.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None, out=True)
 
         # Making the baseline plot
+        ymax = np.max(baseline) + (np.max(baseline) - np.min(baseline))*0.2
+        ymin = np.min(baseline) - (np.max(baseline) - np.min(baseline))*0.2
         fig = plt.figure(figsize=(9, 5))
         ax = fig.add_subplot(1, 1, 1)
-        ax.plot(time_stamps, baseline)
-        ax.set_ylabel(r'Time (s)')
-        ax.set_xlabel(r'Baseline (% of FSR)')
+        ax.plot(time_sec, baseline)
+        ax.set_xlabel(r'Time (s)')
+        ax.set_ylabel(r'Baseline (A.U.)')
+        ratio = 100/2**15
+        ax2 = plt.gca().twinx()
+        ax2.set_ylim([ymin*ratio, ymax*ratio])
+        ax2.set_ylabel(r'Baseline (% of FSR)')
+        for item in (ax.yaxis.label, ax.xaxis.label, ax2.yaxis.label):
+            item.set_weight('bold')
+            item.set_fontsize(15)
+
         fig.tight_layout()
         plt.savefig(pltfilename+'_BASELINE.png', bbox_inches='tight')
    

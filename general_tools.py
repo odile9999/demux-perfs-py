@@ -174,7 +174,6 @@ def plot_hk(hk, fulldirname, config):
 
     n_valid_hk = n_valid_hk-1 # Date does not count as an HK
 
-    # Plot for all other pixels (but the test pixels)
     n_cols = 3
     n_lines = n_valid_hk // n_cols
     if n_valid_hk % n_cols != 0:

@@ -2,6 +2,7 @@ import general_tools
 import gbw
 import dumps
 import energy_resol
+import baseline
 import os
 
 # ---------------------------------------------------------------------------
@@ -32,6 +33,10 @@ def process_demux_proto_tests(dirname):
     # Processing "Carriers spectra characterization"
     pix=40 # test pixel index
     dumps.processIQ_multi(fulldirname, config, pix_zoom=pix, SR=False)
+
+    # -----------------------------------------------------------------------
+    # Checking baseline level
+    baseline.check_baseline(fulldirname, config)
 
     # -----------------------------------------------------------------------
     # Processing "Energy resolution characterization"

@@ -1,4 +1,4 @@
-path_tests;..\..
+path_tests;../..
 dir_data;DATA
 dir_hk;HK
 dir_plots;PLOTS
@@ -8,3 +8,5 @@ ScBandMax;560
 SNR_pix;-125
 DRD;-160
 Cf;4,5
+fs;20e6
+power_to_fs2;7

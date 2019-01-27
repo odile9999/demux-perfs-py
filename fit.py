@@ -61,13 +61,15 @@ def hist_and_fit(array_to_fit,bins,show=True, pltfilename='ER', inf=None, out=Fa
             plt.xlabel(par + '(' + unit + ')', **axis_font)
         else:
             par=None
-            unit='eV'
         hist_fit = gauss(axe_fit, *coeff)
         plt.hist(array_to_fit, bins=bins, facecolor='lightgreen', alpha=0.9, label=par)
         plt.plot(axe_fit,hist_fit,'r--',linewidth=2, label='Gaussian fit')
+        plt.xlabel('Energy (eV)', **axis_font)
         plt.ylabel('Counts', **axis_font)
         plt.legend(loc='best', prop={'size':12})
-        plt.title('Gaussian fit with $\mu$ = %.2f ' %(coeff[1]) + unit + ' and FWHM = %.2f ' %(coeff[2]*2.35482) + unit, **axis_font)
+        plt.title('{0:3d} counts, $\mu$ = {1:4.2f} eV and FWHM = {2:4.2f} eV'\
+                .format(np.sum(hist), coeff[1], coeff[2]*2.35482), **axis_font)
+        #plt.title(', $\mu$ = %.2f ' %(coeff[1]) + unit + ' and FWHM = %.2f ' %(coeff[2]*2.35482) + unit, **axis_font)
         #plt.show(block=False)
         plt.savefig(pltfilename+'.png', bbox_inches='tight')
 
