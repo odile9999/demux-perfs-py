@@ -48,144 +48,145 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
                 and f[-4:]=='.dat'\
                 and f[f_type_deb:f_type_fin]=="IN-BIA"]
 
-    dumpfilename1 = os.path.join(datadirname, dumpfilenames1[0])
-    dumpfilename2 = os.path.join(datadirname, dumpfilenames2[0])
-    logfilename  = os.path.join(fulldirname, "dumps.log")
-    plotfilenameA = os.path.join(plotdirname, "PLOT_DUMP_" + NameA + ".png")
-    plotfilenameB = os.path.join(plotdirname, "PLOT_DUMP_" + NameB + ".png")
-    plotfilenameC = os.path.join(plotdirname, "PLOT_DUMP_" + NameC + ".png")
+    if len(dumpfilenames1)>0 and len(dumpfilenames2)>0:
+        dumpfilename1 = os.path.join(datadirname, dumpfilenames1[0])
+        dumpfilename2 = os.path.join(datadirname, dumpfilenames2[0])
+        logfilename  = os.path.join(fulldirname, "dumps.log")
+        plotfilenameA = os.path.join(plotdirname, "PLOT_DUMP_" + NameA + ".png")
+        plotfilenameB = os.path.join(plotdirname, "PLOT_DUMP_" + NameB + ".png")
+        plotfilenameC = os.path.join(plotdirname, "PLOT_DUMP_" + NameC + ".png")
 
-    # Getting the data from dump file
-    data1, _ = get_data.readfile(dumpfilename1)
-    data2, _ = get_data.readfile(dumpfilename2)
+        # Getting the data from dump file
+        data1, _ = get_data.readfile(dumpfilename1)
+        data2, _ = get_data.readfile(dumpfilename2)
 
-    channel=int(data1[0, 1]/2**12)
-    a=data1[1:,0]
-    b=data1[1:,1]
-    c=data2[1:,1]
- 
-    nval=len(a)
-    duration = (nval/fs)
-   
-    # Reduction of the number of samples (if needed)
-    duration = min(duration, Max_duration)
-    nval = int(duration * fs)
+        channel=int(data1[0, 1]/2**12)
+        a=data1[1:,0]
+        b=data1[1:,1]
+        c=data2[1:,1]
+    
+        nval=len(a)
+        duration = (nval/fs)
+    
+        # Reduction of the number of samples (if needed)
+        duration = min(duration, Max_duration)
+        nval = int(duration * fs)
 
-    # reduction of the number of values to a power of 2 (for a faster FFT)
-    power2 = int(np.log(nval)/np.log(2))
-    nval = int(2**power2)   
+        # reduction of the number of values to a power of 2 (for a faster FFT)
+        power2 = int(np.log(nval)/np.log(2))
+        nval = int(2**power2)   
 
-    t = np.linspace(0, duration, nval)
+        t = np.linspace(0, duration, nval)
 
-    a = a[:nval]
-    b = b[:nval]
-    c = c[:nval]
+        a = a[:nval]
+        b = b[:nval]
+        c = c[:nval]
 
-    f_res = fs / nval
+        f_res = fs / nval
 
-    io_str1 = '\n\
-=============================================================================\n\
-=================================  DUMP ANALISYS ============================\n\
-=============================================================================\n\
-Dump file name--------> ' + dumpfilename1 + ' \n\
-                        ' + dumpfilename2 + ' \n\
-Log file name---------> ' + logfilename + ' \n\
-Plots saved in files--> ' + plotfilenameA + ' \n\
-                        ' + plotfilenameB + ' \n\
-                        ' + plotfilenameC + ' \n\
-Channel---------------> {0:2d}\n\
-\n'.format(channel)
+        io_str1 = '\n\
+    =============================================================================\n\
+    =================================  DUMP ANALISYS ============================\n\
+    =============================================================================\n\
+    Dump file name--------> ' + dumpfilename1 + ' \n\
+                            ' + dumpfilename2 + ' \n\
+    Log file name---------> ' + logfilename + ' \n\
+    Plots saved in files--> ' + plotfilenameA + ' \n\
+                            ' + plotfilenameB + ' \n\
+                            ' + plotfilenameC + ' \n\
+    Channel---------------> {0:2d}\n\
+    \n'.format(channel)
 
-    io_str2 = '\
-Number of values in data file----> {0:6d} \n'.format(nval)
+        io_str2 = '\
+    Number of values in data file----> {0:6d} \n'.format(nval)
 
-    io_str3 = '\
-Duration of measurement----------> {0:6.2f} s \n'.format(duration)
+        io_str3 = '\
+    Duration of measurement----------> {0:6.2f} s \n'.format(duration)
 
-    io_str4 = '\
-=============================================================================\n\
-Dump frequency resolution--------> {0:6.2f} Hz\n\
-Bandwidth factor wrt 1Hz---------> {1:6.2f} db\n\
-=============================================================================\n'\
-    .format(f_res, 10*np.log10(f_res))
+        io_str4 = '\
+    =============================================================================\n\
+    Dump frequency resolution--------> {0:6.2f} Hz\n\
+    Bandwidth factor wrt 1Hz---------> {1:6.2f} db\n\
+    =============================================================================\n'\
+        .format(f_res, 10*np.log10(f_res))
 
-    flog = open(logfilename, 'w')
-    flog.write(io_str1)
-    flog.write(io_str2)
-    flog.write(io_str3)
-    flog.write(io_str4)
+        flog = open(logfilename, 'w')
+        flog.write(io_str1)
+        flog.write(io_str2)
+        flog.write(io_str3)
+        flog.write(io_str4)
 
-    plot_str = ' Number of samples--> {0:8d}   Dump duration--> {1:6.2f} s   Frequency resolution--> {2:8.2f} Hz\n' \
-    .format(nval, nval / fs, fs / nval)
+        plot_str = ' Number of samples--> {0:8d}   Dump duration--> {1:6.2f} s   Frequency resolution--> {2:8.2f} Hz\n' \
+        .format(nval, nval / fs, fs / nval)
 
- 
-    ###########################################################################
-    print("------------------------------------")
-    if np.max(np.abs(a))==0:
-        print("Data stream A is empty!")
-    else:
-        print("Processing datastream of INPUT signal...")
-        afdb, a_carriers, a_Noise_Power, io_str5 = makeanalysis(a, f_res, nba, config)
-        if len(a_carriers) == 0:
-            a_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
-                                            # defined at 1MHz just to define a 
-                                            # focus for the plot
-        io_str5 = '\
-== Measurements on data stream ' + NameA + '\n\
-=============================================================================\n'\
-        + io_str5
-        flog.write(io_str5)
-        plot_strA = "Signal "+ NameA + "  " + plot_str
-        fmin = (a_carriers[0] - config['ScBandMax']) / 1e6
-        fmax = (a_carriers[0] + config['ScBandMax']) / 1e6
-        makeplots(t, a, nba, afdb, fs, a_Noise_Power, fmin, fmax, \
-                  plot_strA, plotfilenameA)
- 
-    ###########################################################################
-    print("------------------------------------")
-    if np.max(np.abs(b))==0:
-        print("Data stream B is empty!")
-    else:
-        print("Processing datastream of FEEDBACK signal...")
-        bfdb, b_carriers, b_Noise_Power, io_str6 = makeanalysis(b, f_res, nbb, config)
-        if len(b_carriers) == 0:
-            b_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
-                                            # defined at 1MHz just to define a 
-                                            # focus for the plot
-        io_str6 = '\
-== Measurements on data stream ' + NameB + '\n\
-=============================================================================\n'\
-        + io_str6
-        flog.write(io_str6)
-        plot_strB = "Signal "+ NameB + "  " + plot_str
-        fmin = (b_carriers[0] - config['ScBandMax']) / 1e6
-        fmax = (b_carriers[0] + config['ScBandMax']) / 1e6
-        makeplots(t, b, nbb, bfdb, fs, b_Noise_Power, fmin, fmax, \
-                  plot_strB, plotfilenameB)
+    
+        ###########################################################################
+        print("------------------------------------")
+        if np.max(np.abs(a))==0:
+            print("Data stream A is empty!")
+        else:
+            print("Processing datastream of INPUT signal...")
+            afdb, a_carriers, a_Noise_Power, io_str5 = makeanalysis(a, f_res, nba, config)
+            if len(a_carriers) == 0:
+                a_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
+                                                # defined at 1MHz just to define a 
+                                                # focus for the plot
+            io_str5 = '\
+    == Measurements on data stream ' + NameA + '\n\
+    =============================================================================\n'\
+            + io_str5
+            flog.write(io_str5)
+            plot_strA = "Signal "+ NameA + "  " + plot_str
+            fmin = (a_carriers[0] - config['ScBandMax']) / 1e6
+            fmax = (a_carriers[0] + config['ScBandMax']) / 1e6
+            makeplots(t, a, nba, afdb, fs, a_Noise_Power, fmin, fmax, \
+                    plot_strA, plotfilenameA)
+    
+        ###########################################################################
+        print("------------------------------------")
+        if np.max(np.abs(b))==0:
+            print("Data stream B is empty!")
+        else:
+            print("Processing datastream of FEEDBACK signal...")
+            bfdb, b_carriers, b_Noise_Power, io_str6 = makeanalysis(b, f_res, nbb, config)
+            if len(b_carriers) == 0:
+                b_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
+                                                # defined at 1MHz just to define a 
+                                                # focus for the plot
+            io_str6 = '\
+    == Measurements on data stream ' + NameB + '\n\
+    =============================================================================\n'\
+            + io_str6
+            flog.write(io_str6)
+            plot_strB = "Signal "+ NameB + "  " + plot_str
+            fmin = (b_carriers[0] - config['ScBandMax']) / 1e6
+            fmax = (b_carriers[0] + config['ScBandMax']) / 1e6
+            makeplots(t, b, nbb, bfdb, fs, b_Noise_Power, fmin, fmax, \
+                    plot_strB, plotfilenameB)
 
-    ###########################################################################
-    print("------------------------------------")
-    if np.max(np.abs(c))==0:
-        print("Data stream C is empty!")
-    else:
-        print("Processing datastream of BIAS signal...")
-        cfdb, c_carriers, c_Noise_Power, io_str7 = makeanalysis(c, f_res, nbc, config)
-        if len(c_carriers) == 0:
-            c_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
-                                            # defined at 1MHz just to define a 
-                                            # focus for the plot
-        io_str7 = '\
-== Measurements on data stream ' + NameC + '\n\
-=============================================================================\n'\
-        + io_str7
-        flog.write(io_str7)
-        plot_strC = "Signal "+ NameC + "  " + plot_str
-        fmin = (c_carriers[0] - config['ScBandMax']) / 1e6
-        fmax = (c_carriers[0] + config['ScBandMax']) / 1e6
-        makeplots(t, c, nbc, cfdb, fs, c_Noise_Power, fmin, fmax, \
-                  plot_strC, plotfilenameC)
- 
-    flog.close()
+        ###########################################################################
+        print("------------------------------------")
+        if np.max(np.abs(c))==0:
+            print("Data stream C is empty!")
+        else:
+            print("Processing datastream of BIAS signal...")
+            cfdb, c_carriers, c_Noise_Power, io_str7 = makeanalysis(c, f_res, nbc, config)
+            if len(c_carriers) == 0:
+                c_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
+                                                # defined at 1MHz just to define a 
+                                                # focus for the plot
+            io_str7 = '\
+    == Measurements on data stream ' + NameC + '\n\
+    =============================================================================\n'\
+            + io_str7
+            flog.write(io_str7)
+            plot_strC = "Signal "+ NameC + "  " + plot_str
+            fmin = (c_carriers[0] - config['ScBandMax']) / 1e6
+            fmax = (c_carriers[0] + config['ScBandMax']) / 1e6
+            makeplots(t, c, nbc, cfdb, fs, c_Noise_Power, fmin, fmax, \
+                    plot_strC, plotfilenameC)
+    
+        flog.close()
 
     print("Done!")
     print("------------------------------------")
@@ -570,7 +571,6 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
     Impact_BBFB = 3  # BBFB adds 3 dB noise (TBC)
     SNR_pix_min = config['SNR_pix'] + Impact_2_DACs + Impact_non_stationarity
     SNR_pix_max = SNR_pix_min + Impact_BBFB
-    Carrier_vs_FS_dB=20*np.log10(FSR_over_PeakPeak*2*Cf*np.sqrt(40))
     ScBandMin = config['ScBandMin'] 
     ScBandMax = config['ScBandMax'] 
     BW_res_warn = r'A BW res. correction factor of {0:4.2f}dB has been applied on the spectra. It shall be corrected for spurious measurements.'.format(BW_correction_factor_dB)
@@ -602,15 +602,21 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
     ax.set_yticks(minor_ticks, minor=True)
     ax.grid(which='minor', alpha=0.2)
     ax.grid(which='major', alpha=0.5)
-    ax2 = plt.gca().twinx()
-    ax2.axis([f[1], f[-1], -160-Carrier_vs_FS_dB, 0-Carrier_vs_FS_dB])
-    ax2.set_ylabel(r'DRD (dBFS/Hz)')
-    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label, ax2.yaxis.label]):
+    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
         item.set_weight('bold')
-    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label, ax2.yaxis.label]):
+    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
         item.set_fontsize(17)
-    for item in (ax.get_xticklabels() + ax.get_yticklabels() + ax2.get_yticklabels()):
+    for item in (ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(15)
+    if Cf!=0:
+        Carrier_vs_FS_dB=20*np.log10(FSR_over_PeakPeak*2*Cf*np.sqrt(40))
+        ax2 = plt.gca().twinx()
+        ax2.axis([f[1], f[-1], -160-Carrier_vs_FS_dB, 0-Carrier_vs_FS_dB])
+        ax2.set_ylabel(r'DRD (dBFS/Hz)')
+        ax2.yaxis.label.set_weight('bold')
+        ax2.yaxis.label.set_fontsize(17)
+        for item in (ax2.get_yticklabels()):
+            item.set_fontsize(15)
 
     fig.tight_layout()
     plt.savefig(pltfilename+suffixe+'_zoom'+str(pix_zoom)+'.png', bbox_inches='tight')
@@ -690,20 +696,22 @@ def get_Cf_and_FSRoverPeakPeak_from_file(fulldirname, quiet=True):
             if os.path.isfile(os.path.join(fulldirname, f)) \
             and f[-4:]=='.dat'\
             and f[f_type_deb:f_type_fin]=="IN-BIA"]
-    # print(fname[0])
 
-    filename = os.path.join(fulldirname, dumpfilenames[0])
+    if len(dumpfilenames)>0:
+        filename = os.path.join(fulldirname, dumpfilenames[0])
 
-    data, _ = get_data.readfile(filename)
-    feedback = data[1:,1]
-    Cf = crestfactor(feedback)
-    PeakPeak = 2.*max(abs(feedback))
-    FSR_over_PeakPeak = 2**16/PeakPeak
-    if not quiet:
-        print("Feedback crest factor: {0:5.2f}".format(Cf))
-        print("Feedback peak value:   {0:5.2f}".format(PeakPeak))
-        print("DAC peak value:        {0:5d}".format(2**16-1))
-        print("FSR / Peak:            {0:5.2f}".format(FSR_over_PeakPeak))
+        data, _ = get_data.readfile(filename)
+        feedback = data[1:,1]
+        Cf = crestfactor(feedback)
+        PeakPeak = 2.*max(abs(feedback))
+        FSR_over_PeakPeak = 2**16/PeakPeak
+        if not quiet:
+            print("Feedback crest factor: {0:5.2f}".format(Cf))
+            print("Feedback peak value:   {0:5.2f}".format(PeakPeak))
+            print("DAC peak value:        {0:5d}".format(2**16-1))
+            print("FSR / Peak:            {0:5.2f}".format(FSR_over_PeakPeak))
+    else:
+        Cf = FSR_over_PeakPeak = 0
 
     return(Cf, FSR_over_PeakPeak)
  
@@ -759,9 +767,6 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
 
     pltfilename = os.path.join(plotdirname, "PLOT_carrier_spt")
 
-    print('Measurment of signal crest factor from feedback dump files if they exist')
-    Cf0, FSR_over_PeakPeak0 = get_Cf_and_FSRoverPeakPeak_from_file(datadirname)
-
     i_test_deb, i_test_fin = 27, 40
     test = "_Science-Data"
     fichlist = [f for f in os.listdir(datadirname) \
@@ -769,71 +774,77 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
                 and f[-4:]=='.dat' \
                 and f[i_test_deb:i_test_fin]==test]
 
-    # definning file length
-    Chan0_i, Chan0_q, _, _, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fichlist[0]))
-    npts = len(Chan0_i[:,0])
-    print('Npts:', npts)
-    npts=min(npts_max, 2**np.int(np.log(npts)/np.log(2)))
-    duration=npts/fs
-    # Factor to correct the resolution BW effect on noise
-    BW_correction_factor_dB=10*np.log10(duration)
-    print("Scan duration is about: {0:6.4f}".format(duration))
-    print("WARNING, a bandwidth correction factor of {0:6.4f}dB is applied on the spectra.".format(BW_correction_factor_dB))
-    print("This offset needs to be taken into account when considering spurious values.")
+    if len(fichlist)>0:
+        print('Measurment of signal crest factor from feedback dump files if they exist')
+        Cf0, FSR_over_PeakPeak0 = get_Cf_and_FSRoverPeakPeak_from_file(datadirname)
 
-    spt0dB=np.zeros((npix, npts//2+1))
-    total_spt0=np.zeros((npix, npts//2+1))
-    spt = np.zeros((npix, npts//2+1))
+        # definning file length
+        Chan0_i, Chan0_q, _, _, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fichlist[0]))
+        npts = len(Chan0_i[:,0])
+        print('Npts:', npts)
+        npts=min(npts_max, 2**np.int(np.log(npts)/np.log(2)))
+        duration=npts/fs
+        # Factor to correct the resolution BW effect on noise
+        BW_correction_factor_dB=10*np.log10(duration)
+        print("Scan duration is about: {0:6.4f}".format(duration))
+        print("WARNING, a bandwidth correction factor of {0:6.4f}dB is applied on the spectra.".format(BW_correction_factor_dB))
+        print("This offset needs to be taken into account when considering spurious values.")
 
-    win = 1
-    if window:
-        win = np.blackman(npts)
-  
-    nfiles = len(fichlist)
-    print("{0:3d} files to process...".format(nfiles))
-    file=0
-    errors_counter = 0
-    CHAN0_EMPTY=True
-    for fich in fichlist:
-        file+=1
-        print('Processing file {0:3d}/{1:3d} '.format(file, nfiles), end='')
-        print(fich)
-        Chan0_i, Chan0_q, _, _, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fich))
-        npts_current = len(Chan0_i[:,0])
-        if FLAG_ERROR:
-            errors_counter += 1
+        spt0dB=np.zeros((npix, npts//2+1))
+        total_spt0=np.zeros((npix, npts//2+1))
+        spt = np.zeros((npix, npts//2+1))
 
-        if npts_current >= npts:
+        win = 1
+        if window:
+            win = np.blackman(npts)
+    
+        nfiles = len(fichlist)
+        print("{0:3d} files to process...".format(nfiles))
+        file=0
+        errors_counter = 0
+        CHAN0_EMPTY=True
+        for fich in fichlist:
+            file+=1
+            print('Processing file {0:3d}/{1:3d} '.format(file, nfiles), end='')
+            print(fich)
+            Chan0_i, Chan0_q, _, _, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fich))
+            npts_current = len(Chan0_i[:,0])
+            if FLAG_ERROR:
+                errors_counter += 1
 
-            Chan0_modulus = \
-                np.sqrt(Chan0_i[0:npts,:].astype('float')**2 + Chan0_q[0:npts,:].astype('float')**2)
-                        
-            if np.max(Chan0_modulus) > 0: # data exists
-                CHAN0_EMPTY=False
-                for pix in range(npix):
-                    spt[pix,:] = abs(rfft((Chan0_modulus[:,pix])*win))
-                total_spt0 += spt**2
+            if npts_current >= npts:
+
+                Chan0_modulus = \
+                    np.sqrt(Chan0_i[0:npts,:].astype('float')**2 + Chan0_q[0:npts,:].astype('float')**2)
                             
-        else:
-            print("File is too short!")
-            nb_short_files += 1 
+                if np.max(Chan0_modulus) > 0: # data exists
+                    CHAN0_EMPTY=False
+                    for pix in range(npix):
+                        spt[pix,:] = abs(rfft((Chan0_modulus[:,pix])*win))
+                    total_spt0 += spt**2
+                                
+            else:
+                print("File is too short!")
+                nb_short_files += 1 
 
-    print("Data processing is done.")
-    print("{0:4d} corrupted files found.".format(errors_counter))
-    print("{0:4d} files were too short for processing.".format(nb_short_files))
-    print("Doing the plots...", end='')
- 
-    if not CHAN0_EMPTY:            
-        spt0dB = 10*np.log10(total_spt0)
-        # Normalisation wrt each carrier
-        for pix in range(npix): 
-            spt0dB[pix,:] = spt0dB[pix,:] - np.max(spt0dB[pix,:])
-        # 3 dB correction to compensate the impact of the rfft on DC bin
-        spt0dB[:,1:] += 3
-        # Normalisation to a RBW of 1Hz
-        if BW_CORRECTION:
-            spt0dB[:,1:] += BW_correction_factor_dB
-        plot_spectra(spt0dB, fs, config, pltfilename, Cf0, FSR_over_PeakPeak0, '', BW_correction_factor_dB, pix_zoom, SR)
-
+        print("Data processing is done.")
+        print("{0:4d} corrupted files found.".format(errors_counter))
+        print("{0:4d} files were too short for processing.".format(nb_short_files))
+        print("Doing the plots...", end='')
+    
+        if not CHAN0_EMPTY:            
+            spt0dB = 10*np.log10(total_spt0)
+            # Normalisation wrt each carrier
+            for pix in range(npix): 
+                spt0dB[pix,:] = spt0dB[pix,:] - np.max(spt0dB[pix,:])
+            # 3 dB correction to compensate the impact of the rfft on DC bin
+            spt0dB[:,1:] += 3
+            # Normalisation to a RBW of 1Hz
+            if BW_CORRECTION:
+                spt0dB[:,1:] += BW_correction_factor_dB
+            plot_spectra(spt0dB, fs, config, pltfilename, Cf0, FSR_over_PeakPeak0, '', BW_correction_factor_dB, pix_zoom, SR)
+    else:
+        spt0dB=0
+        
     return(spt0dB)
 
