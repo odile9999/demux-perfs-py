@@ -33,28 +33,24 @@ def check_baseline(fulldirname, config):
     if len(fichlist)>0:
         Chan0_i, Chan0_q, _, _, _ = get_data.readIQ(os.path.join(datadirname,fichlist[0]))
         l=len(Chan0_i[:,0])
-        npts = 100
-        l2=int(l/npts)
-        mod=np.zeros((l2,41))
+        mod=np.zeros((l,41))
         for pix in range(41):
-            mod[:,pix]=np.sqrt(smooth(Chan0_i[:,pix].astype('float'),npts)**2 + smooth(Chan0_q[:,pix].astype('float'),npts)**2)
+            mod[:,pix]=np.sqrt(Chan0_i[:,pix].astype('float')**2 + Chan0_q[:,pix].astype('float')**2)
 
         Chan0_i, Chan0_q=0,0
 
-        t = npts*np.arange(l2)/(20e6/2**7)
+        t = np.arange(l)/(20e6/2**7)
         n_boxes=41
         n_lines=6
         n_cols=7
 
         fig = plt.figure(figsize=(18, 12))
         for box in range(n_boxes):
-            ymax = np.max(mod[1:,box]) + (np.max(mod[1:,box]) - np.min(mod[1:,box]))*0.5
-            ymin = np.min(mod[1:,box]) - (np.max(mod[1:,box]) - np.min(mod[1:,box]))*0.5
+            ymax = np.max(mod[:,box]) + (np.max(mod[:,box]) - np.min(mod[:,box]))*0.5
+            ymin = np.min(mod[:,box]) - (np.max(mod[:,box]) - np.min(mod[:,box]))*0.5
             ax = fig.add_subplot(n_lines, n_cols, box+1)
-            ax.plot(t[1:], mod[1:,box])
+            ax.plot(t, mod[:,box])
             ax.set_ylim([ymin, ymax])
-            #ax.axis([f[1], f[-1], -160, 0])
-            #ax.grid(color='k', linestyle=':', linewidth=0.5)
             ax.set_title(r'Pixel {0:2d}'.format(box))
             plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
             ratio = 100/2**15
