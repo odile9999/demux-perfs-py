@@ -128,7 +128,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
 
     n_valid_hk = n_valid_hk-1 # Date does not count as an HK
 
-    n_cols = 3
+    n_cols = 4
     n_lines = n_valid_hk // n_cols
     if n_valid_hk % n_cols != 0:
         n_lines = n_lines+1
@@ -137,7 +137,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
     for i in range(len(hk['Date'])-1):
         deltatime = np.append(deltatime, (datetxt_to_date(hk['Date'][i+1])-datetxt_to_date(hk['Date'][0])).total_seconds())
 
-    fig = plt.figure(figsize=(10, 18))
+    fig = plt.figure(figsize=(12, 18))
     ihk=1
     for key in hk.keys():
         if key !='Date' and ihk <= n_valid_hk:
@@ -163,7 +163,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
     fig.tight_layout()
     plt.savefig(pltfilename2, bbox_inches='tight')
 
-    fig = plt.figure(figsize=(10, 18))
+    fig = plt.figure(figsize=(12, 18))
     ihk=1
     for key in hk.keys():
         if key !='Date' and ihk <= n_valid_hk:
