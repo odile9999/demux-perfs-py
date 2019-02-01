@@ -23,8 +23,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-import general_tools
-
 # -----------------------------------------------------------------------
 
 def get_hk(fulldirname, config):
@@ -33,10 +31,10 @@ def get_hk(fulldirname, config):
 
         Parameters:
         -----------
-        fulldirname : string
+        fulldirname: string
         The name of the dump file (with the path)
 
-        config : dictionnary
+        config: dictionnary
         Contains path and constants definitions
 
         Returns
@@ -46,7 +44,7 @@ def get_hk(fulldirname, config):
         """
 
     hk={}
-    hkdirname = os.path.join(fulldirname, os.path.normcase(config['dir_hk']))
+    hkdirname = os.path.join(os.path.normcase(fulldirname), os.path.normcase(config['dir_hk']))
     hkfilename = [f for f in os.listdir(hkdirname) \
             if os.path.isfile(os.path.join(hkdirname, f)) \
             and f[-4:]=='.csv']
@@ -107,6 +105,16 @@ def plot_hk(hk, hk_lims, fulldirname, config):
         Parameters
         ----------
         hk: Dictionnary
+        hk values.
+
+        hk_lims: Dictionnary
+        hk limits. 
+
+        fulldirname: string
+        The name of the dump file (with the path)
+
+        config: dictionnary
+        Contains path and constants definitions
 
         Returns
         -------
@@ -114,7 +122,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
 
         """
 
-    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    plotdirname = os.path.join(os.path.normcase(fulldirname), os.path.normcase(config['dir_plots']))
     if not os.path.isdir(plotdirname):
         os.mkdir(plotdirname)
     pltfilename1 = os.path.join(plotdirname, 'PLOT_HK.png')
@@ -199,6 +207,26 @@ def datetxt_to_date(datetxt):
 # -----------------------------------------------------------------------
 
 def get_hk_lims(fulldirname, config, hk):
+    r"""
+        This function gets the hk limits from a text file.
+
+        Parameters
+        ----------
+        fulldirname : string
+        The name of the dump file (with the path)
+
+        config : dictionnary
+        Contains path and constants definitions
+
+        hk: Dictionnary
+        hk values.
+
+        Returns
+        -------
+        hk_lims: Dictionnary
+        hk limits. 
+
+        """
 
     hk_lims_dict={\
             'lowalert': False, \
@@ -218,7 +246,7 @@ def get_hk_lims(fulldirname, config, hk):
 
     filename = 'parametersTF.dispatcher'
 
-    hkdirname = os.path.join(fulldirname, os.path.normcase(config['dir_hk']))
+    hkdirname = os.path.join(os.path.normcase(fulldirname), os.path.normcase(config['dir_hk']))
     fullfilename = os.path.join(hkdirname, filename)
     if not os.path.isfile(fullfilename):
         print(filename+" file not found.")
@@ -248,6 +276,19 @@ def get_hk_lims(fulldirname, config, hk):
 # -----------------------------------------------------------------------
 
 def print_hk_lims(hk_lims_list):
+    r"""
+        This function prints the hk limits.
+
+        Parameters
+        ----------
+        hk_lims: Dictionnary
+        hk limits. 
+
+        Returns
+        -------
+        Nothing.
+        
+        """
 
     for key1 in hk_lims_list.keys():
         if key1!='Date' and key1[1:9]!="DRE_Hks_":

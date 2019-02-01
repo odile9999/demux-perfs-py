@@ -10,7 +10,7 @@ import os
 def process_demux_proto_tests(dirname):
     config = general_tools.get_conf()
 
-    fulldirname = os.path.join(config['path_tests'], dirname)
+    fulldirname = os.path.join(os.path.normcase(config['path_tests']), dirname)
 
     # -----------------------------------------------------------------------
     # Processing of hk files 
