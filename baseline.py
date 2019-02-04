@@ -21,8 +21,8 @@ def check_baseline(fulldirname, config):
 
     pltfilename = os.path.join(plotdirname, "PLOT_BASELINE")
 
-    i_test_deb, i_test_fin = 27, 40
-    test = "_Science-Data"
+    i_test_deb, i_test_fin = 21, 40
+    test = "IQ-ALL_Science-Data"
     fichlist = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat' \

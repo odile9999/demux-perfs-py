@@ -192,7 +192,6 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     print("------------------------------------")
 # -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
 def makeanalysis(sig, df, nb, config):
     r"""
         This function does the analysis of a signal. In time domain (measurment
@@ -521,7 +520,7 @@ def noiseandspurpower(sigf, indexes, df, config):
     return(PowersdB)
 
 # -----------------------------------------------------------------------
-def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe, BW_correction_factor_dB, pix_zoom=40, SR=False):
+def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, ncar, suffixe, BW_correction_factor_dB, pix_zoom=40):
     r"""
         This function plots spectra of IQ data wrt the carriers.
                 
@@ -545,6 +544,9 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
         FSR_over_PeakPeak : number.
         Ratio between signal peak to peak value and DAC FSR (used for the conversion dBc / dBFS)
 
+        ncar : number.
+        Number of carriers
+
         suffixe : string. Extension to be added to the plot file name.
 
         BW_correction_factor_dB : number.
@@ -554,10 +556,6 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
         pix_zoom: number
         The id of a pixel to be zoomed in.
         (default value is 40 = test pixel)
-
-        SR: boolean
-        indicates if the plot with a "small frequency range" shall be produced
-        (default is False)
 
         Returns
         -------
@@ -609,7 +607,7 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
     for item in (ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(15)
     if Cf!=0:
-        Carrier_vs_FS_dB=20*np.log10(FSR_over_PeakPeak*2*Cf*np.sqrt(40))
+        Carrier_vs_FS_dB=20*np.log10(FSR_over_PeakPeak*2*Cf*np.sqrt(ncar))
         ax2 = plt.gca().twinx()
         ax2.axis([f[1], f[-1], -160-Carrier_vs_FS_dB, 0-Carrier_vs_FS_dB])
         ax2.set_ylabel(r'DRD (dBFS/Hz)')
@@ -652,33 +650,6 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, suffixe,
     fig.tight_layout()
     plt.savefig(pltfilename+suffixe+'_40pix.png', bbox_inches='tight')
 
-    if SR:
-        fig = plt.figure(figsize=(18, 12))
-        for box in range(n_boxes):
-            ax = fig.add_subplot(n_lines, n_cols, box+1)
-            ax.semilogx(f[1:], sptdB[box,1:])
-            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_min, SNR_pix_min], ':r')
-            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_max, SNR_pix_max], ':r')
-            ax.semilogx([ScBandMin, ScBandMin], [SNR_pix_min, 0], ':r')
-            ax.semilogx([ScBandMax, ScBandMax], [SNR_pix_min, 0], ':r')
-            ax.axis([f[1], 1e3, -160, 0])
-            ax.grid(color='k', linestyle=':', linewidth=0.5)
-            ax.set_title(r'Pixel {0:2d}'.format(box))
-            if box//n_cols == n_lines-1:
-                ax.set_xlabel(r'Frequency (Hz)')
-            else:
-                plt.xticks(visible=False)
-            if box%n_cols == 0:
-                ax.set_ylabel(r'DRD (dBc/Hz)')
-            else:
-                plt.yticks(visible=False)
-        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
-            item.set_fontsize(15)
-        for item in (ax.get_xticklabels() + ax.get_yticklabels()):
-            item.set_fontsize(13)
-        fig.tight_layout()
-        plt.savefig(pltfilename+suffixe+'_40pix_SR.png', bbox_inches='tight')   
-
 # -----------------------------------------------------------------------
 def get_Cf_and_FSRoverPeakPeak_from_file(fulldirname, quiet=True):
     r"""   
@@ -701,22 +672,32 @@ def get_Cf_and_FSRoverPeakPeak_from_file(fulldirname, quiet=True):
         filename = os.path.join(fulldirname, dumpfilenames[0])
 
         data, _ = get_data.readfile(filename)
-        feedback = data[1:,1]
+        feedback = data[1:,1].astype(float)
         Cf = crestfactor(feedback)
         PeakPeak = 2.*max(abs(feedback))
-        FSR_over_PeakPeak = 2**16/PeakPeak
+        FSR_over_PeakPeak = 2.**16/PeakPeak
+        
+        # Searching the carriers
+        feedback_F = abs(rfft(feedback[:2**16]))
+        feedback_Fdb = -300.*np.ones(2**16)
+        inotzero = np.where(feedback_F != 0)[0]
+        feedback_Fdb[inotzero] = 20*np.log10(feedback_F[inotzero])
+        ncar = len(peakdetect(feedback_Fdb))
+        #print("============>>>>>>>>>>>> ", ncar)
+
         if not quiet:
             print("Feedback crest factor: {0:5.2f}".format(Cf))
             print("Feedback peak value:   {0:5.2f}".format(PeakPeak))
+            print("Number of carriers:    {0:5d}".format(ncar))
             print("DAC peak value:        {0:5d}".format(2**16-1))
             print("FSR / Peak:            {0:5.2f}".format(FSR_over_PeakPeak))
     else:
-        Cf = FSR_over_PeakPeak = 0
+        Cf = FSR_over_PeakPeak = ncar = 0
 
-    return(Cf, FSR_over_PeakPeak)
+    return(Cf, FSR_over_PeakPeak, ncar)
  
 # -----------------------------------------------------------------------
-def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_CORRECTION=True, SR=False):
+def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_CORRECTION=True):
     r"""
         This function reads data from several DRE IQ data files.
         It computes the accumulated spectra and makes the plots.
@@ -743,10 +724,6 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
         Specifies if a correction factor has to be applied to take into account the resolution BW (Default is True).
         If this factor is applied the measurment will be wrong for spuriouses (Default is True).
 
-        SR: boolean
-        indicates if the plot with a "small frequency range" shall be produced
-        (default is False)
-        
         Returns
         ------- 
         spt0dB : Array containing the accumulated pixels spectra
@@ -767,8 +744,8 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
 
     pltfilename = os.path.join(plotdirname, "PLOT_carrier_spt")
 
-    i_test_deb, i_test_fin = 27, 40
-    test = "_Science-Data"
+    i_test_deb, i_test_fin = 21, 40
+    test = "IQ-ALL_Science-Data"
     fichlist = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat' \
@@ -776,7 +753,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
 
     if len(fichlist)>0:
         print('Measurment of signal crest factor from feedback dump files if they exist')
-        Cf0, FSR_over_PeakPeak0 = get_Cf_and_FSRoverPeakPeak_from_file(datadirname)
+        Cf0, FSR_over_PeakPeak0, ncar = get_Cf_and_FSRoverPeakPeak_from_file(datadirname)
 
         # definning file length
         Chan0_i, Chan0_q, _, _, FLAG_ERROR = get_data.readIQ(os.path.join(datadirname, fichlist[0]))
@@ -842,9 +819,192 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
             # Normalisation to a RBW of 1Hz
             if BW_CORRECTION:
                 spt0dB[:,1:] += BW_correction_factor_dB
-            plot_spectra(spt0dB, fs, config, pltfilename, Cf0, FSR_over_PeakPeak0, '', BW_correction_factor_dB, pix_zoom, SR)
+            plot_spectra(spt0dB, fs, config, pltfilename, Cf0, FSR_over_PeakPeak0, ncar, '', BW_correction_factor_dB, pix_zoom)
     else:
         spt0dB=0
         
     return(spt0dB)
 
+# -----------------------------------------------------------------------
+def processIQ_TST_multi(fulldirname, config, fs=20e6, window=False, BW_CORRECTION=True):
+    r"""
+        This function reads data from several DRE IQ-TST data files.
+        It computes the accumulated spectra and makes the plots.
+        
+        Parameters
+        ----------
+        dirname : string
+        The name of the directory containing the data files
+        (no path)
+        
+        fs: number
+        The data sampling rate at DAC and ADC .
+        (default value is 20e6)
+        
+        window: boolean
+        Specifies if a windowing shall be done before the FFT.
+        If True a Blackman Harris window is applied. (Default is False)
+
+        BW_CORRECTION: boolean
+        Specifies if a correction factor has to be applied to take into account the resolution BW (Default is True).
+        If this factor is applied the measurment will be wrong for spuriouses (Default is True).
+        
+        Returns
+        ------- 
+        spt0dB : Array containing the accumulated pixels spectra
+           
+        """
+
+    npts_max=2**26
+    nb_short_files=0
+
+    datadirname = os.path.join(fulldirname, config['dir_data'])
+    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    if not os.path.isdir(plotdirname):
+        os.mkdir(plotdirname)
+
+    pltfilename = os.path.join(plotdirname, "PLOT_carrier-TST_spt")
+
+    i_test_deb, i_test_fin = 21, 40
+    test = "IQ-TST_Science-Data"
+    fichlist = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[-4:]=='.dat' \
+                and f[i_test_deb:i_test_fin]==test]
+
+    if len(fichlist)>0:
+        print('Measurment of signal crest factor from feedback dump files if they exist')
+        Cf, FSR_over_PeakPeak, ncar = get_Cf_and_FSRoverPeakPeak_from_file(datadirname)
+
+        # definning file length
+        data, dumptype = get_data.readfile(os.path.join(datadirname, fichlist[0]))
+        if dumptype != 9:
+            raise ValueError('Wrong dumptype')
+
+        # decommutation des donnees        
+        npts = len(data[1:,0])   
+        print('Npts:', npts)
+        npts=min(npts_max, 2**np.int(np.log(npts)/np.log(2)))
+        duration=npts/fs
+        # Factor to correct the resolution BW effect on noise
+        BW_correction_factor_dB=10*np.log10(duration)
+        print("Scan duration is about: {0:6.4f}".format(duration))
+        print("WARNING, a bandwidth correction factor of {0:6.4f}dB is applied on the spectra.".format(BW_correction_factor_dB))
+        print("This offset needs to be taken into account when considering spurious values.")
+
+        sptdB=np.zeros((npts//2+1))
+        total_spt=np.zeros((npts//2+1))
+
+        win = 1
+        if window:
+            win = np.blackman(npts)
+    
+        nfiles = len(fichlist)
+        print("{0:3d} files to process...".format(nfiles))
+        file=0
+        errors_counter = 0
+        EMPTY=True
+        for fich in fichlist:
+            file+=1
+            print('Processing file {0:3d}/{1:3d} '.format(file, nfiles), end='')
+            print(fich)
+
+            data, dumptype = get_data.readfile(os.path.join(datadirname, fich))
+            if dumptype != 9:
+                raise ValueError('Wrong dumptype')
+
+            # decommutation des donnees        
+            npts_current = len(data[1:,0])
+
+            if npts_current >= npts:
+
+                modulus = \
+                    np.sqrt(data[1:npts+1,0].astype('float')**2 + data[1:npts+1,1].astype('float')**2)
+                            
+                if np.max(modulus) > 0: # data exists
+                    EMPTY=False
+                    total_spt += abs(rfft(modulus*win))**2
+                                
+            else:
+                print("File is too short!")
+                nb_short_files += 1 
+
+        print("Data processing is done.")
+        print("{0:4d} corrupted files found.".format(errors_counter))
+        print("{0:4d} files were too short for processing.".format(nb_short_files))
+        print("Doing the plots...", end='')
+    
+        if not EMPTY:            
+            sptdB = 10*np.log10(total_spt)
+            # Normalisation wrt carrier
+            sptdB -= np.max(sptdB)
+            # 3 dB correction to compensate the impact of the rfft on DC bin
+            sptdB[1:] += 3
+            # Normalisation to a RBW of 1Hz
+            if BW_CORRECTION:
+                sptdB[1:] += BW_correction_factor_dB
+
+            npts = len(sptdB)
+            f=np.arange(npts)*fs/(2*npts)
+            Impact_2_DACs = 3    # Because the test set-up involves two DACs (bias and feedback)
+            Impact_non_stationarity = 20*np.log10(1.4) # Because our test set-up does not reproduce the TES non-stationarity 
+            Impact_BBFB = 3  # BBFB adds 3 dB noise (TBC)
+            SNR_pix_min = config['SNR_pix'] + Impact_2_DACs + Impact_non_stationarity
+            SNR_pix_max = SNR_pix_min + Impact_BBFB
+            ScBandMin = config['ScBandMin'] 
+            ScBandMax = config['ScBandMax'] 
+            BW_res_warn = r'A BW res. correction factor of {0:4.2f}dB has been applied on the spectra. It shall be corrected for spurious measurements.'.format(BW_correction_factor_dB)
+
+            fig = plt.figure(figsize=(12, 8))
+            ax = fig.add_subplot(1, 1, 1)
+            ax.semilogx(f[1:], sptdB[1:])
+            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_min, SNR_pix_min], ':r', linewidth=3)
+            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_max, SNR_pix_max], ':r', linewidth=3)
+            ax.semilogx([ScBandMin, ScBandMin], [SNR_pix_min, 0], ':r', linewidth=3)
+            ax.semilogx([ScBandMax, ScBandMax], [SNR_pix_min, 0], ':r', linewidth=3)
+            ax.text(40, -17, r'band of interest', fontsize=11)
+            ax.text(ScBandMin, SNR_pix_min-5, r'DRD requirement level', fontsize=11)
+            ax.text(1.5, -159, BW_res_warn, fontsize=11)
+            L1, L2=100, 2.5
+            ax.arrow(ScBandMin, -20, ScBandMax-L1, 0, head_width=3, head_length=L1, fc='k', ec='k')
+            ax.arrow(ScBandMax, -20, -ScBandMax+ScBandMin+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
+            #ax.axis([1, f[-1], -180, 0])
+            ax.set_ylim(-180, 0)
+            ax.set_xlim(1, f[-1])
+            ax.set_xlabel(r'Frequency (Hz)')
+            ax.set_ylabel(r'DRD (dBc/Hz)')
+            ax.set_title(r'Test pixel')
+            # Major ticks every 20, minor ticks every 10
+            major_ticks = np.arange(-160, 1, 20)
+            minor_ticks = np.arange(-160, 1, 10)
+            #ax.set_xticks(major_ticks)
+            #ax.set_xticks(minor_ticks, minor=True)
+            ax.set_yticks(major_ticks)
+            ax.set_yticks(minor_ticks, minor=True)
+            ax.grid(which='minor', alpha=0.2)
+            ax.grid(which='major', alpha=0.5)
+            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
+                item.set_weight('bold')
+            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
+                item.set_fontsize(17)
+            for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(15)
+            if Cf!=0:
+                Carrier_vs_FS_dB=20*np.log10(FSR_over_PeakPeak*2*Cf*np.sqrt(ncar))
+                ax2 = plt.gca().twinx()
+                ax2.axis([f[1], f[-1], -160-Carrier_vs_FS_dB, 0-Carrier_vs_FS_dB])
+                ax2.set_ylabel(r'DRD (dBFS/Hz)')
+                ax2.yaxis.label.set_weight('bold')
+                ax2.yaxis.label.set_fontsize(17)
+                for item in (ax2.get_yticklabels()):
+                    item.set_fontsize(15)
+
+            fig.tight_layout()
+            plt.savefig(pltfilename+'.png', bbox_inches='tight')
+
+    else:
+        sptdB=0
+        
+    return(sptdB)
+
+# -----------------------------------------------------------------------

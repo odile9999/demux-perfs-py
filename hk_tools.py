@@ -43,7 +43,7 @@ def get_hk(fulldirname, config):
 
         """
 
-    hk={}
+    hk=hk_lims={}
     hkdirname = os.path.join(os.path.normcase(fulldirname), os.path.normcase(config['dir_hk']))
     hkfilename = [f for f in os.listdir(hkdirname) \
             if os.path.isfile(os.path.join(hkdirname, f)) \
@@ -73,7 +73,8 @@ def get_hk(fulldirname, config):
                                 hk[keys[i]] = np.append(hk[keys[i]], row[i])
                             else:
                                 hk[keys[i]] = np.append(hk[keys[i]], float(row[i].replace(',','.')))
-    return(hk, get_hk_lims(fulldirname, config, hk))
+        hk_lims = get_hk_lims(fulldirname, config, hk)
+    return(hk, hk_lims)
 
 # -----------------------------------------------------------------------
 

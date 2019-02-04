@@ -20,7 +20,7 @@ def process_demux_proto_tests(dirname):
  
     # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
-    dumps.process_dump(fulldirname, config, Max_duration=1.0)
+    #dumps.process_dump(fulldirname, config, Max_duration=1.0)
 
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
@@ -33,7 +33,8 @@ def process_demux_proto_tests(dirname):
     # -----------------------------------------------------------------------
     # Processing "Carriers spectra characterization"
     pix=40 # test pixel index
-    dumps.processIQ_multi(fulldirname, config, pix_zoom=pix, SR=False)
+    dumps.processIQ_multi(fulldirname, config, pix_zoom=pix)
+    dumps.processIQ_TST_multi(fulldirname, config, window=False, BW_CORRECTION=True)
 
     # -----------------------------------------------------------------------
     # Checking baseline level
