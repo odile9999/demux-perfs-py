@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 
 #------------------------------------------------------------------------------
-def meas_energy_r(fulldirname, config):
+def meas_energy_r(fulldirname, config, pix=40):
 
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
@@ -24,11 +24,18 @@ def meas_energy_r(fulldirname, config):
     # Reading data from files    
     events_name = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
+                and os.path.getsize(os.path.join(datadirname, f))!=0 \
                 and f[:6]=='events' and f[-4:]=='.dat']
     
     if len(events_name)>0:
-        time_stamps, _, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]))
-        time_sec = time_stamps / (config['fs']/config['power_to_fs2'])
+        time_stamps, pixId, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]))
+        # keeping only pixels from the pixel we are interested in
+        i_good = np.where(pixId==pix)
+        time_stamps=time_stamps[i_good[0]]
+        energy=energy[i_good[0]]
+        baseline=baseline[i_good[0]]
+
+        time_sec = time_stamps / (config['fs']/2**config['power_to_fs2'])
         # Making the histogram plot
         fit.hist_and_fit(energy,fit.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None, out=True)
 
