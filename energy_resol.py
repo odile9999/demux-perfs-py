@@ -24,7 +24,7 @@ def meas_energy_r(fulldirname, config):
     # Reading data from files    
     events_name = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f=='events.dat']
+                and f[:6]=='events' and f[-4:]=='.dat']
     
     if len(events_name)>0:
         time_stamps, _, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]))

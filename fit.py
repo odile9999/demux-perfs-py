@@ -62,6 +62,9 @@ def hist_and_fit(array_to_fit,bins,show=True, pltfilename='ER', inf=None, out=Fa
         else:
             par=None
             unit='eV'
+        for item in (ax.get_xticklabels()):
+            item.set_rotation(45)
+
         hist_fit = gauss(axe_fit, *coeff)
         plt.hist(array_to_fit, bins=bins, facecolor='lightgreen', alpha=0.9, label=par)
         plt.plot(axe_fit,hist_fit,'r--',linewidth=2, label='Gaussian fit')
