@@ -332,9 +332,12 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
 
     """
     Cf = crestfactor(sig)
+    moyenne = np.abs(np.mean(sig))
+    moyenne_dBFS = 20*np.log10(2**nb/moyenne)
     PeakPeak = 2.*max(abs(sig))
     FSR_over_PeakPeak = 2**nb/PeakPeak
-    io_str2 = '\nCrest factor---> {0:6.2f}      FSR_DAC/PeakPeak---> {1:8.2f}'.format(Cf, FSR_over_PeakPeak)
+    io_str2 = '\n Crest factor = {0:5.2f}    FSR_DAC/PeakPeak = {1:6.2f}\n Mean = {2:5.2f} = {3:5.2f} dBFS'\
+        .format(Cf, FSR_over_PeakPeak, moyenne, moyenne_dBFS)
 
     f = np.linspace(0, fs/2, len(sigfdb))
     L1 = 1024         # length of time plot (long)
@@ -361,7 +364,7 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
     #ax1.plot(1000*t, sig, 'b')
     #ax1.plot(1000*t, sig, '.r')
     ax1.plot(1000*t[0:L1], sig[0:L1], 'b')
-    ax1.text(0, 2**(nb-1)*0.9, io_str2, color='b')
+    ax1.text(0, 2**(nb-1)*0.75, io_str2, color='b')
     #ax1.plot(1000*t[0:L1], sig[0:L1], '.r')
     ax1.set_ylabel(ytimetitle)
     ax1.set_xlabel('Time (ms)')
@@ -374,9 +377,10 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
 
     ax2 = fig.add_subplot(2, 2, 2)
     ax2.plot(f/1e6, sigfdb, 'b', linewidth=1)
-    ax2.plot([0, f[-1]], [AllSinesRmsLevel, AllSinesRmsLevel], '--g', linewidth=1.5)
-    ax2.plot([0, f[-1]], [NoiseReq, NoiseReq], '--k', linewidth=1.5)
-    #ax2.plot([0, f[-1]], [Noise_Power, Noise_Power], '--k', linewidth=1.5)
+    if nb==16:
+        ax2.plot([0, f[-1]], [AllSinesRmsLevel, AllSinesRmsLevel], '--g', linewidth=1.5)
+        ax2.plot([0, f[-1]], [NoiseReq, NoiseReq], '--k', linewidth=1.5)
+        #ax2.plot([0, f[-1]], [Noise_Power, Noise_Power], '--k', linewidth=1.5)
     ax2.set_ylabel(yfreqtitle)
     ax2.set_xlabel('Frequency (MHz)')
     ax2.grid(color='k', linestyle=':', linewidth=0.5)
@@ -385,8 +389,9 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
     ax3 = fig.add_subplot(2, 2, 3)
     ax3.plot(f / 1e6, sigfdb, 'b', linewidth=1)
     #ax3.plot(f / 1e6, sigfdb, '.r')
-    ax3.plot([0, f[-1]], [AllSinesRmsLevel, AllSinesRmsLevel], '--g', linewidth=1.5)
-    ax3.plot([0, f[-1]], [NoiseReq, NoiseReq], '--k', linewidth=1.5)
+    if nb==16:
+        ax3.plot([0, f[-1]], [AllSinesRmsLevel, AllSinesRmsLevel], '--g', linewidth=1.5)
+        ax3.plot([0, f[-1]], [NoiseReq, NoiseReq], '--k', linewidth=1.5)
     #ax3.plot([0, f[-1]], [Noise_Power, Noise_Power], '--k', linewidth=1.5)
     ax3.set_ylabel(yfreqtitle)
     ax3.set_xlabel('Frequency (MHz)')
@@ -396,8 +401,9 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
     ax4 = fig.add_subplot(2, 2, 4)
     ax4.plot(f / 1e6, sigfdb, 'b', linewidth=1)
     ax4.plot(f / 1e6, sigfdb, '.r')
-    ax4.plot([0, f[-1]], [AllSinesRmsLevel, AllSinesRmsLevel], '--g', linewidth=1.5)
-    ax4.plot([0, f[-1]], [NoiseReq, NoiseReq], '--k', linewidth=1.5)
+    if nb==16:
+        ax4.plot([0, f[-1]], [AllSinesRmsLevel, AllSinesRmsLevel], '--g', linewidth=1.5)
+        ax4.plot([0, f[-1]], [NoiseReq, NoiseReq], '--k', linewidth=1.5)
     #ax4.plot([0, f[-1]], [Noise_Power, Noise_Power], '--k', linewidth=1.5)
     ax4.set_ylabel(yfreqtitle)
     ax4.set_xlabel('Frequency (MHz)')
@@ -475,7 +481,6 @@ def crestfactor(signal):
     signal=signal.astype('float')
     peak = max(abs(signal))
     rms = np.sqrt(np.mean(signal ** 2))
-    #print(peak, rms, peak/rms)
     return(peak / rms)
 
 # -----------------------------------------------------------------------------

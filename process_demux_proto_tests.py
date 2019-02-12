@@ -20,7 +20,7 @@ def process_demux_proto_tests(dirname):
  
     # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
-    #dumps.process_dump(fulldirname, config, Max_duration=1.0)
+    dumps.process_dump(fulldirname, config, Max_duration=1.0)
 
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
