@@ -331,7 +331,7 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
         Nothing
 
     """
-    Cf = crestfactor(sig)
+    Cf = crestfactor(sig-sig.mean())
     moyenne = sig.mean()
     moyenne_dBFS = 20*np.log10(2**nb/np.abs(moyenne))
     PeakPeak = 2.*abs(sig).max()
@@ -478,7 +478,6 @@ def crestfactor(signal):
         0.651887905613
 
         """
-    signal=signal.astype('float')
     peak = abs(signal).max()
     return(peak / signal.std())
 
