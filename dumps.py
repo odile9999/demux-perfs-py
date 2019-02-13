@@ -122,7 +122,7 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     
         ###########################################################################
         print("------------------------------------")
-        if np.max(np.abs(a))==0:
+        if abs(a).max()==0:
             print("Data stream A is empty!")
         else:
             print("Processing datastream of INPUT signal...")
@@ -144,7 +144,7 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     
         ###########################################################################
         print("------------------------------------")
-        if np.max(np.abs(b))==0:
+        if abs(b).max()==0:
             print("Data stream B is empty!")
         else:
             print("Processing datastream of FEEDBACK signal...")
@@ -166,7 +166,7 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
 
         ###########################################################################
         print("------------------------------------")
-        if np.max(np.abs(c))==0:
+        if abs(c).max()==0:
             print("Data stream C is empty!")
         else:
             print("Processing datastream of BIAS signal...")
@@ -280,7 +280,7 @@ def makeanalysis(sig, df, nb, config):
 Peak Peak amplitude--------------> {0:9.2f} \n\
 Measured crest factor------------> {1:9.2f} \n\
 Max of spectrum------------------> {2:9.2f} dB\n'\
-    .format(PeakPeak, crestfactor(sig), max(sigfdb))
+    .format(PeakPeak, crestfactor(sig), sigfdb.max())
     if nb > 12:
         io_str += 'Number of carriers detected------> {0:9d} : \n'\
         .format(ncar)
@@ -332,9 +332,9 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
 
     """
     Cf = crestfactor(sig)
-    moyenne = np.mean(sig)
+    moyenne = sig.mean()
     moyenne_dBFS = 20*np.log10(2**nb/np.abs(moyenne))
-    PeakPeak = 2.*max(abs(sig))
+    PeakPeak = 2.*abs(sig).max()
     FSR_over_PeakPeak = 2**nb/PeakPeak
     io_str2 = '\n Crest factor = {0:5.2f}    FSR_DAC/PeakPeak = {1:6.2f}\n Mean = {2:5.2f} = {3:5.2f} dBFS'\
         .format(Cf, FSR_over_PeakPeak, moyenne, moyenne_dBFS)
@@ -443,7 +443,7 @@ def peakdetect(sig, margin=6):
 
         """
     # First look for maximum areas
-    ithreshold = np.where(sig > max(sig) - margin)[0]
+    ithreshold = np.where(sig > sig.max() - margin)[0]
 
     # Then look for local maxima in each area
     derivative1 = sig[1:] - sig[:-1]
@@ -479,9 +479,8 @@ def crestfactor(signal):
 
         """
     signal=signal.astype('float')
-    peak = max(abs(signal))
-    rms = np.sqrt(np.mean(signal ** 2))
-    return(peak / rms)
+    peak = abs(signal).max()
+    return(peak / signal.std())
 
 # -----------------------------------------------------------------------------
 def noiseandspurpower(sigf, indexes, df, config):
@@ -799,7 +798,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
                 Chan0_modulus = \
                     np.sqrt(Chan0_i[0:npts,:].astype('float')**2 + Chan0_q[0:npts,:].astype('float')**2)
                             
-                if np.max(Chan0_modulus) > 0: # data exists
+                if Chan0_modulus.max() > 0: # data exists
                     CHAN0_EMPTY=False
                     for pix in range(npix):
                         spt[pix,:] = abs(rfft((Chan0_modulus[:,pix])*win))
@@ -818,7 +817,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
             spt0dB = 10*np.log10(total_spt0)
             # Normalisation wrt each carrier
             for pix in range(npix): 
-                spt0dB[pix,:] = spt0dB[pix,:] - np.max(spt0dB[pix,:])
+                spt0dB[pix,:] = spt0dB[pix,:] - spt0dB[pix,:].max()
             # 3 dB correction to compensate the impact of the rfft on DC bin
             spt0dB[:,1:] += 3
             # Normalisation to a RBW of 1Hz
@@ -926,7 +925,7 @@ def processIQ_TST_multi(fulldirname, config, fs=20e6, window=False, BW_CORRECTIO
                 modulus = \
                     np.sqrt(data[1:npts+1,0].astype('float')**2 + data[1:npts+1,1].astype('float')**2)
                             
-                if np.max(modulus) > 0: # data exists
+                if modulus.max() > 0: # data exists
                     EMPTY=False
                     total_spt += abs(rfft(modulus*win))**2
                                 
@@ -942,7 +941,7 @@ def processIQ_TST_multi(fulldirname, config, fs=20e6, window=False, BW_CORRECTIO
         if not EMPTY:            
             sptdB = 10*np.log10(total_spt)
             # Normalisation wrt carrier
-            sptdB -= np.max(sptdB)
+            sptdB -= sptdB.max()
             # 3 dB correction to compensate the impact of the rfft on DC bin
             sptdB[1:] += 3
             # Normalisation to a RBW of 1Hz

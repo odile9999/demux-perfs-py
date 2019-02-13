@@ -46,8 +46,9 @@ def check_baseline(fulldirname, config):
 
         fig = plt.figure(figsize=(18, 12))
         for box in range(n_boxes):
-            ymax = np.max(mod[:,box]) + (np.max(mod[:,box]) - np.min(mod[:,box]))*0.5
-            ymin = np.min(mod[:,box]) - (np.max(mod[:,box]) - np.min(mod[:,box]))*0.5
+            marge = 0.5
+            ymax = mod[:,box].max() + (mod[:,box].max() - mod[:,box].min())*marge
+            ymin = mod[:,box].min() - (mod[:,box].max() - mod[:,box].min())*marge
             ax = fig.add_subplot(n_lines, n_cols, box+1)
             ax.plot(t, mod[:,box])
             ax.set_ylim([ymin, ymax])
