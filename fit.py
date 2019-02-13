@@ -31,7 +31,7 @@ def hist_and_fit(array_to_fit,bins,show=True, pltfilename='ER', inf=None, out=Fa
     """
     
     import numpy as np
-    from scipy.optimize import curve_fit
+    import scipy
     import matplotlib.pyplot as plt
     import matplotlib as mpl
     label_size = 12
@@ -45,9 +45,10 @@ def hist_and_fit(array_to_fit,bins,show=True, pltfilename='ER', inf=None, out=Fa
     
     hist,bins = np.histogram(array_to_fit,bins=bins) #Bin the data
     bin_centers = (bins[:-1] + bins[1:])/2 #Centers of bins
-    p0=[np.max(hist)/(np.sqrt(2*np.pi)*array_to_fit.std()),array_to_fit.mean(),array_to_fit.std()] #Initial conditions
+    #p0=[np.max(hist)/(np.sqrt(2*np.pi)*array_to_fit.std()),array_to_fit.mean(),array_to_fit.std()] #Initial conditions
+    p0=[np.max(hist),array_to_fit.mean(),array_to_fit.std()] #Initial conditions
     bounds=((0, -np.inf, 0.),(np.inf, np.inf, 10*array_to_fit.std())) #/!\ sometimes may need to comment bounds and remove it from following line
-    coeff, cov=curve_fit(gauss, bin_centers, hist, p0=p0, bounds=bounds, maxfev=10000000) #Do the actual fit
+    coeff, cov=scipy.optimize.curve_fit(gauss, bin_centers, hist, p0=p0, bounds=bounds, maxfev=10000000) #Do the actual fit
     
     #Plot the whole thing
     if show:

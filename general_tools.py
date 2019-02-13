@@ -13,8 +13,10 @@
 
     Routine listing
     ===============
-    get_conf_csv()
+    get_conf()
     print_conf()
+    get_session_info()
+    print_session_info()
 
     """
 
@@ -31,9 +33,8 @@ def get_conf():
         This function reads a dictionnary from a csv file.
 
         Parameters:
-
-        filename: string
-        The name of the csv file
+        -----------
+        None
 
         Returns
         -------
@@ -63,7 +64,7 @@ def print_conf(config):
         This function prints the parameters of a configuration set.
         (path, ...).
 
-        Parameters
+        Parameters:
         ----------
         config: Dictionnary
 
@@ -76,6 +77,65 @@ def print_conf(config):
     print('The configuration parameters are the following:')
     for key in config.keys():
         print(key, ': ', config[key])
+    
+    return()
+# -----------------------------------------------------------------------
+
+def get_session_info(fulldirname):
+    r"""
+        This function reads the session informations from a text file.
+
+        Parameters:
+        -----------
+        fulldirname: string
+        Name of the directory containing the text file
+
+        Returns
+        -------
+        dictionnary: dictionnary
+
+        """
+
+    dict_info={\
+            'XifuStudio': "", \
+            'BoardModel': "", \
+            'BoardId': "", \
+            'BoardVersion': "", \
+            'FirmwareId': "", \
+            'DACMode': "", \
+            'SessionName': "", \
+            'SessionComment': ""
+            }
+    filename=os.path.join(fulldirname, 'session_informations.txt')
+
+    if not os.path.exists(filename):
+        print("Session information file not found.")
+    else:
+        fich = open(filename, "r")
+        for line in fich:
+            if line.split('=')[0] in dict_info:
+                dict_info[line.split('=')[0]]=line.split('=')[1]
+
+    return(dict_info)
+
+# -----------------------------------------------------------------------
+def print_session_info(session_info):
+    r"""
+        This function prints the content of the session information dictionnary.
+
+        Parameters:
+        ----------
+        session_info: Dictionnary
+
+        Returns
+        -------
+        Nothing
+
+        """
+
+    print('The session informations are the following:')
+    for key in session_info.keys():
+        print(key, ': ', session_info[key])
     
     return()
 # -----------------------------------------------------------------------

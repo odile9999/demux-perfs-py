@@ -172,7 +172,7 @@ def check_data(DADA_ch0, DADA_ch1, Chan0_ID, Chan1_ID):
     return(FLAG_ERROR)
 
 # -----------------------------------------------------------------------------
-def readEvents(eventsfilename):
+def readEvents(eventsfilename, XifuStudio_version):
     r"""
         This function reads events binary files
 
@@ -181,10 +181,16 @@ def readEvents(eventsfilename):
         eventsfilename : string
         The name of the dump file (with the path and the extension)
 
+        XifuStudio_version : float
+        reference of the XifuStudio version
+
         Returns
         -------
         timestamp : array
         photon start time (s)
+
+        channelId : array
+        channel which measured the photon
 
         pixelId : array
         pixel which measured the photon
@@ -196,17 +202,29 @@ def readEvents(eventsfilename):
         value of the baseline measured before the event
         """
     
-    fdat=open(eventsfilename, 'rb')
-    dt=np.dtype([('timestamp', np.float), \
+    dt1=np.dtype([('timestamp', np.float), \
+                 ('pixelId', np.int8), \
+                 ('energy', np.float32), \
+                 ('offset', np.float32)])
+
+    dt2=np.dtype([('timestamp', np.float), \
+                 ('channelId', np.int8), \
                  ('pixelId', np.int8), \
                  ('energy', np.float32), \
                  ('offset', np.float32)])
                                   
-    eventList=np.fromfile(fdat, dtype=dt)
-    fdat.close()
+    if XifuStudio_version <= 2.5:
+        fdat=open(eventsfilename, 'rb')
+        eventList=np.fromfile(fdat, dtype=dt1)
+        channelId = np.zeros(len(eventList[:]['timestamp']))
+        fdat.close()
+        return(eventList[:]['timestamp'], channelId, eventList[:]['pixelId'], eventList[:]['energy'], eventList[:]['offset'])
+    else:
+        fdat=open(eventsfilename, 'rb')
+        eventList=np.fromfile(fdat, dtype=dt2)
+        fdat.close()
+        return(eventList[:]['timestamp'], eventList[:]['channelId'], eventList[:]['pixelId'], eventList[:]['energy'], eventList[:]['offset'])
     
-    return(eventList[:]['timestamp'], eventList[:]['pixelId'], eventList[:]['energy'], eventList[:]['offset'])
-
 # -----------------------------------------------------------------------------
 
 def readSpectrum(eventsfilename):

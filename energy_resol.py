@@ -7,12 +7,15 @@ Created on Tue Jul 10 11:28:01 2018
 
 import numpy as np
 import os
-import get_data, fit
+import get_data, fit, general_tools
 import matplotlib.pyplot as plt
 
 
 #------------------------------------------------------------------------------
 def meas_energy_r(fulldirname, config, pix=40):
+
+    session_info = general_tools.get_session_info(fulldirname)
+    XifuStudio_version = np.float(session_info['XifuStudio'].split('v')[1])
 
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
@@ -21,14 +24,20 @@ def meas_energy_r(fulldirname, config, pix=40):
 
     pltfilename = os.path.join(plotdirname, "PLOT_ENERGY-RESOL")
 
-    # Reading data from files    
-    events_name = [f for f in os.listdir(datadirname) \
-                if os.path.isfile(os.path.join(datadirname, f)) \
-                and os.path.getsize(os.path.join(datadirname, f))!=0 \
-                and f[:6]=='events' and f[-4:]=='.dat']
-    
+    # Reading data from files
+    if XifuStudio_version <= 2.5:
+        events_name = [f for f in os.listdir(datadirname) \
+                    if os.path.isfile(os.path.join(datadirname, f)) \
+                    and os.path.getsize(os.path.join(datadirname, f))!=0 \
+                    and f[:6]=='events' and f[-4:]=='.dat']
+    else: 
+        events_name = [f for f in os.listdir(datadirname) \
+                    if os.path.isfile(os.path.join(datadirname, f)) \
+                    and os.path.getsize(os.path.join(datadirname, f))!=0 \
+                    and f[-7:]=='.events']
+
     if len(events_name)>0:
-        time_stamps, pixId, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]))
+        time_stamps, _, pixId, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]), XifuStudio_version)
         # keeping only pixels from the pixel we are interested in
         i_good = np.where(pixId==pix)
         time_stamps=time_stamps[i_good[0]]
