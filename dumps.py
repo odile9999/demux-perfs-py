@@ -332,8 +332,8 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
 
     """
     Cf = crestfactor(sig)
-    moyenne = np.abs(np.mean(sig))
-    moyenne_dBFS = 20*np.log10(2**nb/moyenne)
+    moyenne = np.mean(sig)
+    moyenne_dBFS = 20*np.log10(2**nb/np.abs(moyenne))
     PeakPeak = 2.*max(abs(sig))
     FSR_over_PeakPeak = 2**nb/PeakPeak
     io_str2 = '\n Crest factor = {0:5.2f}    FSR_DAC/PeakPeak = {1:6.2f}\n Mean = {2:5.2f} = {3:5.2f} dBFS'\
