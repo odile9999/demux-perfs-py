@@ -7,7 +7,7 @@ Created on Tue Jul 10 11:28:01 2018
 
 import numpy as np
 import os
-import get_data, fit, general_tools
+import get_data, fit_tools, general_tools
 import matplotlib.pyplot as plt
 
 
@@ -46,7 +46,7 @@ def meas_energy_r(fulldirname, config, pix=40):
 
         time_sec = time_stamps / (config['fs']/2**config['power_to_fs2'])
         # Making the histogram plot
-        fit.hist_and_fit(energy,fit.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None, out=True)
+        fit_tools.gauss_fit(energy,fit_tools.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None)
 
         # Making the baseline plot
         ymax = np.max(baseline) + (np.max(baseline) - np.min(baseline))*0.2
