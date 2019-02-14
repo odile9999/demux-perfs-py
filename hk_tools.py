@@ -183,7 +183,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
             ax.set_xlabel('time (s)')
             mini=hk[key].min()
             maxi=hk[key].max()
-            margin = 0.2*(maxi-mini)
+            margin = max(0.2*(maxi-mini), 0.05)
             ax.set_ylim(mini-margin, maxi+margin)
             ax.grid(color='k', linestyle=':', linewidth=0.5)
             ihk=ihk+1

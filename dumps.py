@@ -813,10 +813,10 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
         print("Doing the plots...", end='')
     
         if not CHAN0_EMPTY:
-            i_good = np.where(total_spt0 > 0)[0]        
-            spt0dB[i_good] = 10*np.log10(total_spt0[i_good])
             # Normalisation wrt each carrier
             for pix in range(npix): 
+                i_good = np.where(total_spt0[pix,:] > 0)[0]
+                spt0dB[pix,i_good] = 10*np.log10(total_spt0[pix,i_good])
                 spt0dB[pix,:] = spt0dB[pix,:] - spt0dB[pix,:].max()
             # 3 dB correction to compensate the impact of the rfft on DC bin
             spt0dB[:,1:] += 3
