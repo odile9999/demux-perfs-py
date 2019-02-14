@@ -770,7 +770,7 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
         print("WARNING, a bandwidth correction factor of {0:6.4f}dB is applied on the spectra.".format(BW_correction_factor_dB))
         print("This offset needs to be taken into account when considering spurious values.")
 
-        spt0dB=np.zeros((npix, npts//2+1))
+        spt0dB=-300*np.ones((npix, npts//2+1))
         total_spt0=np.zeros((npix, npts//2+1))
         spt = np.zeros((npix, npts//2+1))
 
@@ -812,8 +812,9 @@ def processIQ_multi(fulldirname, config, fs=20e6, pix_zoom=40, window=False, BW_
         print("{0:4d} files were too short for processing.".format(nb_short_files))
         print("Doing the plots...", end='')
     
-        if not CHAN0_EMPTY:            
-            spt0dB = 10*np.log10(total_spt0)
+        if not CHAN0_EMPTY:
+            i_good = np.where(total_spt0 > 0)[0]        
+            spt0dB[i_good] = 10*np.log10(total_spt0[i_good])
             # Normalisation wrt each carrier
             for pix in range(npix): 
                 spt0dB[pix,:] = spt0dB[pix,:] - spt0dB[pix,:].max()
