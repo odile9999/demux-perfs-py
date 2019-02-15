@@ -623,33 +623,41 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, ncar, su
     plt.savefig(pltfilename+suffixe+'_zoom'+str(pix_zoom)+'.png', bbox_inches='tight')
 
     # Plot for all other pixels (but the test pixels)
-    n_boxes=40 
+    n_pix=40
+    n_boxes=n_pix 
     n_lines=5
     n_cols =8
 
+    # Checking which pixel is on
+    pix_ON = np.ones((n_pix), dtype=bool)
+    for pix in range(n_pix):
+        if sptdB[pix,:].max()==sptdB[pix,:].min():
+            pix_ON[pix]=False
+
     fig = plt.figure(figsize=(18, 12))
     for box in range(n_boxes):
-        ax = fig.add_subplot(n_lines, n_cols, box+1)
-        ax.semilogx(f[1:], sptdB[box,1:])
-        ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_min, SNR_pix_min], ':r')
-        ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_max, SNR_pix_max], ':r')
-        ax.semilogx([ScBandMin, ScBandMin], [SNR_pix_min, 0], ':r')
-        ax.semilogx([ScBandMax, ScBandMax], [SNR_pix_min, 0], ':r')
-        ax.axis([f[1], f[-1], -160, 0])
-        ax.grid(color='k', linestyle=':', linewidth=0.5)
-        ax.set_title(r'Pixel {0:2d}'.format(box))
-        if box//n_cols == n_lines-1:
-            ax.set_xlabel(r'Frequency (Hz)')
-        else:
-            plt.xticks(visible=False)
-        if box%n_cols == 0:
-            ax.set_ylabel(r'DRD (dBc/Hz)')
-        else:
-            plt.yticks(visible=False)
-        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
-            item.set_fontsize(15)
-        for item in (ax.get_xticklabels() + ax.get_yticklabels()):
-            item.set_fontsize(13)
+        if pix_ON[box]:
+            ax = fig.add_subplot(n_lines, n_cols, box+1)
+            ax.semilogx(f[1:], sptdB[box,1:])
+            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_min, SNR_pix_min], ':r')
+            ax.semilogx([ScBandMin, ScBandMax], [SNR_pix_max, SNR_pix_max], ':r')
+            ax.semilogx([ScBandMin, ScBandMin], [SNR_pix_min, 0], ':r')
+            ax.semilogx([ScBandMax, ScBandMax], [SNR_pix_min, 0], ':r')
+            ax.axis([f[1], f[-1], -160, 0])
+            ax.grid(color='k', linestyle=':', linewidth=0.5)
+            ax.set_title(r'Pixel {0:2d}'.format(box))
+            if box//n_cols == n_lines-1:
+                ax.set_xlabel(r'Frequency (Hz)')
+            else:
+                plt.xticks(visible=False)
+            if box%n_cols == 0:
+                ax.set_ylabel(r'DRD (dBc/Hz)')
+            else:
+                plt.yticks(visible=False)
+            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
+                item.set_fontsize(15)
+            for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(13)
     fig.tight_layout()
     plt.savefig(pltfilename+suffixe+'_40pix.png', bbox_inches='tight')
 

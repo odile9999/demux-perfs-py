@@ -5,7 +5,7 @@ def number_of_bins(array_to_bin):
     """
     import numpy as np
     from scipy.stats import iqr    
-    return np.int(np.floor((np.max(array_to_bin)-np.min(array_to_bin))/(len(array_to_bin)**(-1/3.)*iqr(array_to_bin)*2)))
+    return np.int(np.floor((array_to_bin.max()-array_to_bin.min())/(len(array_to_bin)**(-1/3.)*iqr(array_to_bin)*2)))
 
 def gauss(x, a, b, c):
     """
@@ -87,6 +87,6 @@ def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
         plt.ylabel('Counts', **axis_font)
         plt.legend(loc='best', prop={'size':12})
         plt.title(r'{0:3d} counts, $\mu$ = {1:4.2f} eV and FWHM = {2:4.2f} eV'\
-                .format(np.sum(hist), coeff[1], coeff[2]*2.35482), **axis_font)
+                .format(np.sum(hist), coeff[1], abs(coeff[2])*2.35482), **axis_font)
         plt.savefig(pltfilename+'.png', bbox_inches='tight')
 
