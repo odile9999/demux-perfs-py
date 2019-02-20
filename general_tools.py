@@ -81,7 +81,7 @@ def print_conf(config):
     return()
 # -----------------------------------------------------------------------
 
-def get_session_info(fulldirname):
+def get_session_info1(fulldirname):
     r"""
         This function reads the session informations from a text file.
 
@@ -114,6 +114,35 @@ def get_session_info(fulldirname):
         fich = open(filename, "r")
         for line in fich:
             if line.split('=')[0] in dict_info:
+                dict_info[line.split('=')[0]]=line.split('=')[1]
+
+    return(dict_info)
+
+# -----------------------------------------------------------------------
+def get_session_info(fulldirname):
+    r"""
+        This function reads the session informations from a text file.
+
+        Parameters:
+        -----------
+        fulldirname: string
+        Name of the directory containing the text file
+
+        Returns
+        -------
+        dictionnary: dictionnary
+
+        """
+
+    dict_info={}
+    filename=os.path.join(fulldirname, 'session_informations.txt')
+
+    if not os.path.exists(filename):
+        print("Session information file not found.")
+    else:
+        fich = open(filename, "r")
+        for line in fich:
+            if '=' in line: # this is a parameter definition line
                 dict_info[line.split('=')[0]]=line.split('=')[1]
 
     return(dict_info)

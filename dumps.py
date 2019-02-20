@@ -623,16 +623,16 @@ def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, ncar, su
     plt.savefig(pltfilename+suffixe+'_zoom'+str(pix_zoom)+'.png', bbox_inches='tight')
 
     # Plot for all other pixels (but the test pixels)
-    n_pix=40
-    n_boxes=n_pix 
+    n_boxes=40 
     n_lines=5
     n_cols =8
 
     # Checking which pixel is on
-    pix_ON = np.ones((n_pix), dtype=bool)
-    for pix in range(n_pix):
-        if sptdB[pix,:].max()==sptdB[pix,:].min():
+    pix_ON = np.ones((n_boxes), dtype=bool)
+    for pix in range(n_boxes):
+        if sptdB[pix,1:].max()==sptdB[pix,1:].min():
             pix_ON[pix]=False
+            print("\n------------------> Pixel {0:2d} is off.".format(pix))
 
     fig = plt.figure(figsize=(18, 12))
     for box in range(n_boxes):

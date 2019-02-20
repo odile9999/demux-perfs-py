@@ -172,7 +172,7 @@ def check_data(DADA_ch0, DADA_ch1, Chan0_ID, Chan1_ID):
     return(FLAG_ERROR)
 
 # -----------------------------------------------------------------------------
-def readEvents(eventsfilename, XifuStudio_version):
+def readEvents(eventsfilename, BackupVersion):
     r"""
         This function reads events binary files
 
@@ -213,7 +213,7 @@ def readEvents(eventsfilename, XifuStudio_version):
                  ('energy', np.float32), \
                  ('offset', np.float32)])
                                   
-    if XifuStudio_version <= 2.5:
+    if BackupVersion < 1:
         fdat=open(eventsfilename, 'rb')
         eventList=np.fromfile(fdat, dtype=dt1)
         channelId = np.zeros(len(eventList[:]['timestamp']))
