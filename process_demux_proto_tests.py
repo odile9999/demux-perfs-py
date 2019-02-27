@@ -42,6 +42,7 @@ def process_demux_proto_tests(dirname):
 
     # -----------------------------------------------------------------------
     # Processing "Energy resolution characterization"
+    dumps.process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2)
     energy_resol.meas_energy_r(fulldirname, config)
 
 # ---------------------------------------------------------------------------

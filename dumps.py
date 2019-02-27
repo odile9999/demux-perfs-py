@@ -34,8 +34,8 @@ def process_dump(fulldirname, config, fs=20e6, Max_duration=0.2):
     if not os.path.isdir(plotdirname):
         os.mkdir(plotdirname)
 
-    nba, NameA = 12, "INPT" # FEEDBACK signal over 16 bits
-    nbb, NameB = 16, "FBCK" # INPUT signal over 12 bits
+    nba, NameA = 12, "INPT" # INPUT signal over 12 bits
+    nbb, NameB = 16, "FBCK" # FEEDBACK signal over 16 bits
     nbc, NameC = 16, "BIAS" # BIAS signal over 16 bits
 
     f_type_deb, f_type_fin = 21, 27
@@ -521,6 +521,83 @@ def noiseandspurpower(sigf, indexes, df, config):
     inotzero=np.where(Powers != 0)[0]
     PowersdB[inotzero] = 10*np.log10(Powers[inotzero])
     return(PowersdB)
+
+# -----------------------------------------------------------------------
+def process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2):
+    r"""
+        This function reads and process the data of DRE-DEMUX data dumps.
+        INPUT signal while pulses.
+        
+        Parameters
+        ----------
+        fulldirname : string
+        The name of the dump file (with the path)
+
+        config : dictionnary
+        Contains path and constants definitions
+
+        fs : number, optional
+        Sampling frequency (default is 20 MHz)
+
+        Max_duration : number, optional
+        Maximum duration in seconds to be considered for analysis (default is 1)
+
+        Returns
+        -------
+        Nothing
+
+        """
+
+    datadirname = os.path.join(fulldirname, config['dir_data'])
+    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    if not os.path.isdir(plotdirname):
+        os.mkdir(plotdirname)
+
+    nb = 12 # INPUT signal over 12 bits
+
+    f_type_deb, f_type_fin = 21, 33
+    dumpfilenames = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[-4:]=='.dat'\
+                and f[f_type_deb:f_type_fin]=="IN-BIA_PULSE"]
+
+    if len(dumpfilenames)>0:
+        dumpfilename = os.path.join(datadirname, dumpfilenames[0])
+        plotfilename = os.path.join(plotdirname, "PLOT_INPUT_WITH_PULSES.png")
+
+        # Getting the data from dump file
+        data, _ = get_data.readfile(dumpfilename)
+
+        channel=int(data[0, 1]/2**12)
+        a=data[1:,0]
+        pp=a.max()-a.min()
+    
+        nval=len(a)
+        duration = (nval/fs)
+    
+        t = np.linspace(0, duration, nval)
+
+        Pulse_length = 1024*128
+        center = a[Pulse_length:-1*Pulse_length] # Only consider the center of the dumb to have a full pulse
+        iMax = np.where(center==np.max(center))[0][0]+Pulse_length
+        ideb = iMax - 128*100
+        ifin = iMax + Pulse_length
+
+        # Making plot
+        fig = plt.figure(figsize=(11, 8))
+        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PeakPeak = {1:5.2f}".format(channel, 2.**12/pp)
+        fig.text(0.1, 0.982, io_str, family='monospace')
+
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
+        ax.set_ylabel("ADC unit (FSR range)")
+        ax.set_xlabel("Time (ms)")
+        ax.grid(color='k', linestyle=':', linewidth=0.5)
+        ax.set_ylim([-2**(nb-1), 2**(nb-1)])
+
+        fig.tight_layout()
+        #plt.show()
+        plt.savefig(plotfilename, bbox_inches='tight')
 
 # -----------------------------------------------------------------------
 def plot_spectra(sptdB, fs, config, pltfilename, Cf, FSR_over_PeakPeak, ncar, suffixe, BW_correction_factor_dB, pix_zoom=40):
