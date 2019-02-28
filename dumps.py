@@ -582,17 +582,56 @@ def process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2):
         iMax = np.where(center==np.max(center))[0][0]+Pulse_length
         ideb = iMax - 128*100
         ifin = iMax + Pulse_length
+        i3 = ifin - 128*30
+        i2 = ifin - 128*100
+        i1 = ifin - 128*170
 
         # Making plot
-        fig = plt.figure(figsize=(11, 8))
+        fig = plt.figure(figsize=(8, 6))
         io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PeakPeak = {1:5.2f}".format(channel, 2.**12/pp)
         fig.text(0.1, 0.982, io_str, family='monospace')
 
+        # 0.5Phi0pp => ADC FSR
+        # 12keV => 0.3Phi0pp => ADC FSR x0.3/0.5
+        #  7keV => 0.3Phi0pp x7/12
+        FSRpeak = 2**(nb-1) # FSR peak
+        Twelve_keV_peak = FSRpeak *0.3/0.5
+        Seven_keV_peak = Twelve_keV_peak * 7/12
+        deltatext = 128*30
+        ytext = -0.3 * Seven_keV_peak
+
         ax = fig.add_subplot(1, 1, 1)
         ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [Twelve_keV_peak, Twelve_keV_peak], '--g', linewidth=0.5)
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-1*Twelve_keV_peak, -1*Twelve_keV_peak], '--g', linewidth=0.5)
+        plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
+            xy=(t[i1]*1e3, 1*FSRpeak), textcoords='data',
+            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+        plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
+            xy=(t[i1]*1e3, -1*FSRpeak), textcoords='data',
+            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+        plt.text(t[i1-deltatext]*1e3, ytext, r'0.5 $\phi_0$', rotation=90)
+
+        plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
+            xy=(t[i2]*1e3, 1*Twelve_keV_peak), textcoords='data',
+            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+        plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
+            xy=(t[i2]*1e3, -1*Twelve_keV_peak), textcoords='data',
+            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+        plt.text(t[i2-deltatext]*1e3, ytext, r'0.3 $\phi_0$ (12 keV)', rotation=90)
+
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [Seven_keV_peak, Seven_keV_peak], '--g', linewidth=0.5)
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-1*Seven_keV_peak, -1*Seven_keV_peak], '--g', linewidth=0.5)
+        plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
+            xy=(t[i3]*1e3, 1*Seven_keV_peak), textcoords='data',
+            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+        plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
+            xy=(t[i3]*1e3, -1*Seven_keV_peak), textcoords='data',
+            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+        plt.text(t[i3-deltatext]*1e3, ytext, r'$\approx$ 7keV', rotation=90)
+
         ax.set_ylabel("ADC unit (FSR range)")
         ax.set_xlabel("Time (ms)")
-        ax.grid(color='k', linestyle=':', linewidth=0.5)
         ax.set_ylim([-2**(nb-1), 2**(nb-1)])
 
         fig.tight_layout()
