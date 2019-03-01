@@ -591,14 +591,21 @@ def process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2):
         io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PeakPeak = {1:5.2f}".format(channel, 2.**12/pp)
         fig.text(0.1, 0.982, io_str, family='monospace')
 
-        # 0.5Phi0pp => ADC FSR
-        # 12keV => 0.3Phi0pp => ADC FSR x0.3/0.5
-        #  7keV => 0.3Phi0pp x7/12
+        #---------------------------
+        # Assumptions:
+        # - The FSR of the ADC corresponds to the FSR output of the SQUID (i.e. 0.5Phi0pp)
+        # - 12keV corresponds to 0.3Phi0 at SQUID input
+        # - The "SQUID flux" versus "ADC input level" is a non linear function for high signals (sine function)
+        # - ADC level for 12keV = FSR * sin(pi/2 * 0.3/0.5) / sin(pi/2)
+        # - ADC level for 7keV = FSR * sin(pi/2 * 0.3*(7/12)/0.5) / sin(pi/2)
         FSRpeak = 2**(nb-1) # FSR peak
-        Twelve_keV_peak = FSRpeak *0.3/0.5
-        Seven_keV_peak = Twelve_keV_peak * 7/12
+        FSR_flux = 0.5
+        Twelve_keV_flux = 0.3
+        Seven_keV_flux = 0.3*7./12.
+        Twelve_keV_peak = FSRpeak * np.sin((np.pi/2)*Twelve_keV_flux/FSR_flux) / np.sin(np.pi/2)
+        Seven_keV_peak = FSRpeak * np.sin((np.pi/2)*Seven_keV_flux/FSR_flux) / np.sin(np.pi/2)
         deltatext = 128*30
-        ytext = -0.3 * Seven_keV_peak
+        ytext = -0.1 * FSRpeak
 
         ax = fig.add_subplot(1, 1, 1)
         ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
@@ -618,7 +625,7 @@ def process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2):
         plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
             xy=(t[i2]*1e3, -1*Twelve_keV_peak), textcoords='data',
             arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-        plt.text(t[i2-deltatext]*1e3, ytext, r'0.3 $\phi_0$ (12 keV)', rotation=90)
+        plt.text(t[i2-deltatext]*1e3, ytext, r'0.30 $\phi_0$ (12 keV)', rotation=90)
 
         ax.plot([t[ideb]*1e3,t[ifin]*1e3], [Seven_keV_peak, Seven_keV_peak], '--g', linewidth=0.5)
         ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-1*Seven_keV_peak, -1*Seven_keV_peak], '--g', linewidth=0.5)
@@ -628,7 +635,7 @@ def process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2):
         plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
             xy=(t[i3]*1e3, -1*Seven_keV_peak), textcoords='data',
             arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-        plt.text(t[i3-deltatext]*1e3, ytext, r'$\approx$ 7keV', rotation=90)
+        plt.text(t[i3-deltatext]*1e3, ytext, r'{0:3.2f} $\phi_0$ (7keV)'.format(Seven_keV_flux), rotation=90)
 
         ax.set_ylabel("ADC unit (FSR range)")
         ax.set_xlabel("Time (ms)")
