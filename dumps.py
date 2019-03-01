@@ -617,7 +617,7 @@ def process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2):
         plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
             xy=(t[i1]*1e3, -1*FSRpeak), textcoords='data',
             arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-        plt.text(t[i1-deltatext]*1e3, ytext, r'0.5 $\phi_0$', rotation=90)
+        plt.text(t[i1-deltatext]*1e3, ytext, r'0.50 $\phi_0$', rotation=90)
 
         plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
             xy=(t[i2]*1e3, 1*Twelve_keV_peak), textcoords='data',
@@ -635,7 +635,7 @@ def process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2):
         plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
             xy=(t[i3]*1e3, -1*Seven_keV_peak), textcoords='data',
             arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-        plt.text(t[i3-deltatext]*1e3, ytext, r'{0:3.2f} $\phi_0$ (7keV)'.format(Seven_keV_flux), rotation=90)
+        plt.text(t[i3-deltatext]*1e3, ytext, r'{0:3.2f} $\phi_0$ (7 keV)'.format(Seven_keV_flux), rotation=90)
 
         ax.set_ylabel("ADC unit (FSR range)")
         ax.set_xlabel("Time (ms)")
