@@ -42,7 +42,7 @@ def dumpstr(dumptype):
 
 
 # -----------------------------------------------------------------------------
-def readfile(dumpfilename, Quiet=True):
+def readfile(dumpfilename, quiet=True):
     r"""
         This function reads data from a DRE dump file, and returns 2 arrays
         (format <h).
@@ -53,7 +53,7 @@ def readfile(dumpfilename, Quiet=True):
         dumpfilename : string
         The name of the dump file (with the path and the extension)
 
-        Quiet : boolean
+        quiet : boolean
         Defines if text info shall be written by the routine
 
         Returns
@@ -69,10 +69,7 @@ def readfile(dumpfilename, Quiet=True):
     fdat=open(dumpfilename, 'rb')
     data=np.fromfile(fdat, dtype='<h')
     fdat.close()
-    
-    # if len(data) > 2e9 :
-    #     data = data[:len(data)//2]
-    
+        
     DADA=-9510      # 0xDADA interpreted as int16
     if data[0] != DADA:
         raise ValueError('Problem with file format!')
@@ -80,9 +77,9 @@ def readfile(dumpfilename, Quiet=True):
     header24=int(header2/2**12)
     header23=int((header2-header24*2**12)/2**8)
     header22=int((header2-header24*2**12-header23*2**8)/2**4)
-    #header21=header2-header24*2**12-header23*2**8-header22*2**4
+    #header21=header2-header24*2**12-header23*2**8-header22*2**4 not used
     dumptype=header22
-    if not Quiet:
+    if not quiet:
         print('  Dump type is: ' + dumpstr(dumptype))
     
     data = np.resize(data, (len(data)//2, 2))
@@ -91,7 +88,7 @@ def readfile(dumpfilename, Quiet=True):
 
 
 # -----------------------------------------------------------------------------
-def readIQ(filename):
+def read_iq(filename):
     r"""
         This function reads IQ data from a DRE IQ file.
         (this corresponds to standard observation data)
@@ -122,32 +119,32 @@ def readIQ(filename):
     tab_i = np.resize(data[:,0], (npts, 2*(npix+2)))
     tab_q = np.resize(data[:,1], (npts, 2*(npix+2)))
     
-    DADA_ch0 = tab_i[:, 0]
-    DADA_ch1 = tab_i[:, npix+2]
+    dada_ch0 = tab_i[:, 0]
+    dada_ch1 = tab_i[:, npix+2]
     
-    Chan0_ID = tab_q[:, 0]
-    Chan1_ID = tab_q[:, npix+2]
+    chan0_id = tab_q[:, 0]
+    chan1_id = tab_q[:, npix+2]
     
-    Chan0_i = tab_i[:, 2:2+npix]
-    Chan1_i = tab_i[:, 2+npix+2:]
+    chan0_i = tab_i[:, 2:2+npix]
+    chan1_i = tab_i[:, 2+npix+2:]
     
-    Chan0_q = tab_q[:, 2:2+npix]
-    Chan1_q = tab_q[:, 2+npix+2:]
+    chan0_q = tab_q[:, 2:2+npix]
+    chan1_q = tab_q[:, 2+npix+2:]
 
-    FLAG_ERROR = check_data(DADA_ch0, DADA_ch1, Chan0_ID, Chan1_ID)
+    flag_error = check_data(dada_ch0, dada_ch1, chan0_id, chan1_id)
 
-    return(Chan0_i, Chan0_q, Chan1_i, Chan1_q, FLAG_ERROR)
+    return(chan0_i, chan0_q, chan1_i, chan1_q, flag_error)
 
 
 # -----------------------------------------------------------------------------
-def check_data(DADA_ch0, DADA_ch1, Chan0_ID, Chan1_ID):
+def check_data(dada_ch0, dada_ch1, chan0_id, chan1_id):
     r"""
         This function reads IQ data from a DRE IQ file.
 
         Parameters
         ----------
-        DADA_ch0, DADA_ch1, Chan0_ID, Chan1_ID : array type
-        DADA flags and channel ids for channels 0 and 1
+        dada_ch0, dada_ch1, chan0_id, chan1_id : array type
+        dada flags and channel ids for channels 0 and 1
 
         Returns
         -------
@@ -155,24 +152,24 @@ def check_data(DADA_ch0, DADA_ch1, Chan0_ID, Chan1_ID):
         True if the data format is not correct
                     
         """
-    FLAG_ERROR = False
-    DADA = -9510
-    CH0_ID = 10880
-    CH1_ID = 10881
-    check_DADA0 = np.where(DADA_ch0 != DADA)
-    check_DADA1 = np.where(DADA_ch1 != DADA)
-    check_CH0 = np.where(Chan0_ID != CH0_ID)
-    check_CH1 = np.where(Chan1_ID != CH1_ID)
+    flag_error = False
+    dada = -9510
+    ch0_id = 10880
+    ch1_id = 10881
+    check_dada0 = np.where(dada_ch0 != dada)
+    check_dada1 = np.where(dada_ch1 != dada)
+    check_ch0 = np.where(chan0_id != ch0_id)
+    check_ch1 = np.where(chan1_id != ch1_id)
 
-    if len(check_DADA0[0]) > 0 or len(check_DADA1[0]) > 0 \
-        or len(check_CH0[0]) > 0 or len(check_CH1[0]) > 0:
+    if len(check_dada0[0]) > 0 or len(check_dada1[0]) > 0 \
+        or len(check_ch0[0]) > 0 or len(check_ch1[0]) > 0:
         print(" Error! Problem in the data set !!!!")
-        FLAG_ERROR = True        
+        flag_error = True        
 
-    return(FLAG_ERROR)
+    return(flag_error)
 
 # -----------------------------------------------------------------------------
-def readEvents(eventsfilename, BackupVersion):
+def read_events(eventsfilename, backup_version):
     r"""
         This function reads events binary files
 
@@ -181,8 +178,8 @@ def readEvents(eventsfilename, BackupVersion):
         eventsfilename : string
         The name of the dump file (with the path and the extension)
 
-        XifuStudio_version : float
-        reference of the XifuStudio version
+        backup_version : number
+        reference of the backup_version version
 
         Returns
         -------
@@ -213,21 +210,21 @@ def readEvents(eventsfilename, BackupVersion):
                  ('energy', np.float32), \
                  ('offset', np.float32)])
                                   
-    if BackupVersion < 1:
+    if backup_version < 1:
         fdat=open(eventsfilename, 'rb')
-        eventList=np.fromfile(fdat, dtype=dt1)
-        channelId = np.zeros(len(eventList[:]['timestamp']))
+        event_list=np.fromfile(fdat, dtype=dt1)
+        channel_id = np.zeros(len(event_list[:]['timestamp']))
         fdat.close()
-        return(eventList[:]['timestamp'], channelId, eventList[:]['pixelId'], eventList[:]['energy'], eventList[:]['offset'])
+        return(event_list[:]['timestamp'], channel_id, event_list[:]['pixelId'], event_list[:]['energy'], event_list[:]['offset'])
     else:
         fdat=open(eventsfilename, 'rb')
-        eventList=np.fromfile(fdat, dtype=dt2)
+        event_list=np.fromfile(fdat, dtype=dt2)
         fdat.close()
-        return(eventList[:]['timestamp'], eventList[:]['channelId'], eventList[:]['pixelId'], eventList[:]['energy'], eventList[:]['offset'])
+        return(event_list[:]['timestamp'], event_list[:]['channelId'], event_list[:]['pixelId'], event_list[:]['energy'], event_list[:]['offset'])
     
 # -----------------------------------------------------------------------------
 
-def readSpectrum(eventsfilename):
+def read_spectrum(eventsfilename):
     r"""
         This function reads binary spectrum files
 

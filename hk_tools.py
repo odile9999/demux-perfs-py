@@ -18,7 +18,7 @@
 
 # -----------------------------------------------------------------------
 # Imports
-import os, csv
+import os, csv, general_tools
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -46,8 +46,7 @@ def get_hk(fulldirname, config):
     hk=hk_lims={}
     hkdirname = os.path.join(os.path.normcase(fulldirname), os.path.normcase(config['dir_hk']))
     hkfilename = [f for f in os.listdir(hkdirname) \
-            if os.path.isfile(os.path.join(hkdirname, f)) \
-            and f[-4:]=='.csv']
+            if os.path.isfile(os.path.join(hkdirname, f)) and f[-4:]=='.csv']
     if len(hkfilename) == 0:
         print("Hk file not found.")
         hk = 0
@@ -124,8 +123,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
         """
 
     plotdirname = os.path.join(os.path.normcase(fulldirname), os.path.normcase(config['dir_plots']))
-    if not os.path.isdir(plotdirname):
-        os.mkdir(plotdirname)
+    general_tools.checkdir(plotdirname)
     pltfilename1 = os.path.join(plotdirname, 'PLOT_HK.png')
     pltfilename2 = os.path.join(plotdirname, 'PLOT_HK_LIMS.png')
 
@@ -142,7 +140,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
     if n_valid_hk % n_cols != 0:
         n_lines = n_lines+1
 
-    deltatime = np.array([(datetxt_to_date(hk['Date'][0])-datetxt_to_date(hk['Date'][0])).total_seconds()])
+    deltatime = np.array([(datetxt_to_date(hk['Date'][0]) - datetxt_to_date(hk['Date'][0])).total_seconds()])
     for i in range(len(hk['Date'])-1):
         deltatime = np.append(deltatime, (datetxt_to_date(hk['Date'][i+1])-datetxt_to_date(hk['Date'][0])).total_seconds())
 

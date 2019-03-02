@@ -20,21 +20,21 @@ def process_demux_proto_tests(dirname):
  
     # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
-    dumps.process_dump(fulldirname, config, Max_duration=1.0)
+    dumps.process_dump(fulldirname, config, max_duration=1.0)
 
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
     channel=0
     dumptype = "IQ-ALL"
-    gbw.process_GBW(fulldirname, config, dumptype, channel)
+    gbw.process_gbw(fulldirname, config, dumptype, channel)
     dumptype = "IQ-TST"
-    gbw.process_GBW(fulldirname, config, dumptype, channel)
+    gbw.process_gbw(fulldirname, config, dumptype, channel)
 
     # -----------------------------------------------------------------------
     # Processing "Carriers spectra characterization"
     pix=40 # test pixel index
-    dumps.processIQ_multi(fulldirname, config, pix_zoom=pix)
-    dumps.processIQ_TST_multi(fulldirname, config, window=False, BW_CORRECTION=True)
+    dumps.process_iq_multi(fulldirname, config, pix_zoom=pix)
+    dumps.process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True)
 
     # -----------------------------------------------------------------------
     # Checking baseline level
@@ -42,7 +42,7 @@ def process_demux_proto_tests(dirname):
 
     # -----------------------------------------------------------------------
     # Processing "Energy resolution characterization"
-    dumps.process_dump_pulses(fulldirname, config, fs=20e6, Max_duration=0.2)
+    dumps.process_dump_pulses(fulldirname, config)
     energy_resol.meas_energy_r(fulldirname, config)
 
 # ---------------------------------------------------------------------------

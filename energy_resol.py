@@ -15,21 +15,19 @@ import matplotlib.pyplot as plt
 def meas_energy_r(fulldirname, config, pix=40):
 
     session_info = general_tools.get_session_info(fulldirname)
-    #BackupVersion = np.float(session_info['BackupVersion'].split('v')[1])
     if 'BackupVersion' in session_info:
-        BackupVersion = np.float(session_info['BackupVersion'])
+        backup_version = np.float(session_info['BackupVersion'])
     else:
-        BackupVersion = 0
+        backup_version = 0
 
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
-    if not os.path.isdir(plotdirname):
-        os.mkdir(plotdirname)
+    general_tools.checkdir(plotdirname)
 
     pltfilename = os.path.join(plotdirname, "PLOT_ENERGY-RESOL")
 
     # Reading data from files
-    if BackupVersion < 1:
+    if backup_version < 1:
         events_name = [f for f in os.listdir(datadirname) \
                     if os.path.isfile(os.path.join(datadirname, f)) \
                     and os.path.getsize(os.path.join(datadirname, f))!=0 \
@@ -41,9 +39,9 @@ def meas_energy_r(fulldirname, config, pix=40):
                     and f[-7:]=='.events']
 
     if len(events_name)>0:
-        time_stamps, _, pixId, energy, baseline = get_data.readEvents(os.path.join(datadirname, events_name[0]), BackupVersion)
+        time_stamps, _, pix_id, energy, baseline = get_data.read_events(os.path.join(datadirname, events_name[0]), backup_version)
         # keeping only pixels from the pixel we are interested in
-        i_good = np.where(pixId==pix)
+        i_good = np.where(pix_id==pix)
         time_stamps=time_stamps[i_good[0]]
         energy=energy[i_good[0]]
         baseline=baseline[i_good[0]]
@@ -73,12 +71,11 @@ def meas_energy_r(fulldirname, config, pix=40):
    
 
 #------------------------------------------------------------------------------
-def plot_GSE_spectrum(fulldirname, config, Emin, Emax):
+def plot_gse_spectrum(fulldirname, config, e_min, e_max):
 
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
-    if not os.path.isdir(plotdirname):
-        os.mkdir(plotdirname)
+    general_tools.checkdir(plotdirname)
 
     pltfilename = os.path.join(plotdirname, "PLOT_GSE_SPECTRUM")
 
@@ -87,17 +84,17 @@ def plot_GSE_spectrum(fulldirname, config, Emin, Emax):
     spectrum_name = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[:i_type_fin]=='Spectrum_']
-    hysto_en, hysto_counts = get_data.readSpectrum(os.path.join(datadirname, spectrum_name[0]))
+    hysto_en, hysto_counts = get_data.read_spectrum(os.path.join(datadirname, spectrum_name[0]))
     
     # Making the plot
     fig = plt.figure(figsize=(9, 5))
-    MaxCounts = np.max(hysto_counts)*1.3
+    max_counts = np.max(hysto_counts)*1.3
 
     ax7 = fig.add_subplot(1, 1, 1)
     ax7.plot(hysto_en, hysto_counts, 'o')
     ax7.set_ylabel(r'Counts')
     ax7.set_xlabel(r'Energy (eV)')
-    ax7.axis([Emin, Emax, 0, MaxCounts])
+    ax7.axis([e_min, e_max, 0, max_counts])
 
     fig.tight_layout()
     plt.savefig(pltfilename+'.png', bbox_inches='tight')

@@ -28,6 +28,25 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 # -----------------------------------------------------------------------
+def checkdir(dirname):
+    r"""
+        This function checks if a directory exists. If not it creates it.
+
+        Parameters:
+        -----------
+        dirname: String
+        Name of the directory to be verified / created.
+
+        Returns
+        -------
+        Nothing
+
+        """
+    if not os.path.isdir(dirname):
+        os.mkdir(dirname)
+    return()
+
+# -----------------------------------------------------------------------
 def get_conf():
     r"""
         This function reads a dictionnary from a csv file.
@@ -76,9 +95,9 @@ def print_conf(config):
 
     print('The configuration parameters are the following:')
     for key in config.keys():
-        print(key, ': ', config[key])
-    
+        print(key, ': ', config[key])    
     return()
+
 # -----------------------------------------------------------------------
 
 def get_session_info(fulldirname):
@@ -127,5 +146,6 @@ def print_session_info(session_info):
     print('The session informations are the following:')
     for key in session_info.keys():
         print(key, ': ', session_info[key])
+    return()
     
 # -----------------------------------------------------------------------

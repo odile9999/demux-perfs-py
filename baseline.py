@@ -1,4 +1,4 @@
-import get_data
+import get_data, general_tools
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,12 +12,23 @@ def smooth(y, box_pts):
     return y_smooth[xsamp]
 
 # ---------------------------------------------------------------------------
+def non_empty_lines(table):
+    r"""
+        This function looks for empty lines in an 2 dimensionnal array.
+    """
+    n_lines = len(table[0,:])
+    non_empty_lines = np.ones((n_lines), dtype=bool)
+    for line in range(n_lines):
+        if np.abs(table[:,line]).max()==0:
+            non_empty_lines[line]=False
+    return(non_empty_lines)
+
+# ---------------------------------------------------------------------------
 def check_baseline(fulldirname, config):
     npix=41
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
-    if not os.path.isdir(plotdirname):
-        os.mkdir(plotdirname)
+    general_tools.checkdir(plotdirname)
 
     pltfilename = os.path.join(plotdirname, "PLOT_BASELINE")
 
@@ -25,25 +36,21 @@ def check_baseline(fulldirname, config):
     test = "IQ-ALL_Science-Data"
     fichlist = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[-4:]=='.dat' \
-                and f[i_test_deb:i_test_fin]==test]
+                and f[-4:]=='.dat' and f[i_test_deb:i_test_fin]==test]
 
     # -----------------------------------------------------------------------
     # Processing baseline 
     if len(fichlist)>0:
-        Chan0_i, Chan0_q, _, _, _ = get_data.readIQ(os.path.join(datadirname,fichlist[0]))
-        l=len(Chan0_i[:,0])
+        chan0_i, chan0_q, _, _, _ = get_data.read_iq(os.path.join(datadirname,fichlist[0]))
+        l=len(chan0_i[:,0])
         mod=np.zeros((l,npix))
         for pix in range(npix):
-            mod[:,pix]=np.sqrt(Chan0_i[:,pix].astype('float')**2 + Chan0_q[:,pix].astype('float')**2)
+            mod[:,pix]=np.sqrt(chan0_i[:,pix].astype('float')**2 + chan0_q[:,pix].astype('float')**2)
 
-        Chan0_i, Chan0_q=0,0
+        chan0_i, chan0_q=0,0
 
         # Checking which pixel is on
-        pix_ON = np.ones((41), dtype=bool)
-        for pix in range(npix):
-            if mod[:,pix].max()==0:
-                pix_ON[pix]=False
+        pix_on = non_empty_lines(mod)
 
         t = np.arange(l)/(20e6/2**7)
         n_boxes=npix
@@ -52,7 +59,7 @@ def check_baseline(fulldirname, config):
 
         fig = plt.figure(figsize=(18, 12))
         for box in range(n_boxes):
-            if pix_ON[box]:
+            if pix_on[box]:
                 marge = 0.5
                 ymax = mod[:,box].max() + (mod[:,box].max() - mod[:,box].min())*marge
                 ymin = mod[:,box].min() - (mod[:,box].max() - mod[:,box].min())*marge

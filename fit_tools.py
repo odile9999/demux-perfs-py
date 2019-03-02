@@ -18,12 +18,12 @@ def gauss(x, a, b, c):
     import numpy as np
     return a * np.exp(-(x - b)**2.0 / (2 * c**2)) 
 
-def L_gauss(x, E, A):
+def l_gauss(x, e, a):
     """
     Returns the line function 
     - x is an array containing FW, coef, cen, base
-    - E is an array with the energy
-    - A is an array with the data to fit
+    - e is an array with the energy
+    - a is an array with the data to fit
     - name is the line name to import right data (string)
     - bool_cont (boolean) if noise is done or not
     Returns function for lsq or other minimization algorithms
@@ -31,9 +31,9 @@ def L_gauss(x, E, A):
     
     import numpy as np
 
-    weights=np.ones(len(A))
-    weights[A>0]=1/np.sqrt(A[A>0])
-    return np.sum(((gauss(E, x[0], x[1], x[2])-A)/weights)**2)
+    weights=np.ones(len(a))
+    weights[a>0]=1/np.sqrt(a[a>0])
+    return np.sum(((gauss(e, x[0], x[1], x[2])-a)/weights)**2)
 
 def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
     """ 
@@ -56,7 +56,7 @@ def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
     hist,bins = np.histogram(array_to_fit,bins=bins)
     bin_centers = (bins[:-1] + bins[1:])/2
     p0=[1.001*np.max(hist), np.average(array_to_fit), np.std(array_to_fit)]
-    res = minimize(L_gauss, p0, args=(bin_centers, hist), method='Powell', 
+    res = minimize(l_gauss, p0, args=(bin_centers, hist), method='Powell', 
                         tol=1e-20, options={'maxiter':1000000, 'ftol': 1e-20})
 
     coeff=res.x
