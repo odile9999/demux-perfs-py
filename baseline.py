@@ -12,18 +12,6 @@ def smooth(y, box_pts):
     return y_smooth[xsamp]
 
 # ---------------------------------------------------------------------------
-def non_empty_lines(table):
-    r"""
-        This function looks for empty lines in an 2 dimensionnal array.
-    """
-    n_lines = len(table[0,:])
-    non_empty_lines = np.ones((n_lines), dtype=bool)
-    for line in range(n_lines):
-        if np.abs(table[:,line]).max()==0:
-            non_empty_lines[line]=False
-    return(non_empty_lines)
-
-# ---------------------------------------------------------------------------
 def check_baseline(fulldirname, config):
     npix=41
     datadirname = os.path.join(fulldirname, config['dir_data'])
@@ -50,9 +38,9 @@ def check_baseline(fulldirname, config):
         chan0_i, chan0_q=0,0
 
         # Checking which pixel is on
-        pix_on = non_empty_lines(mod)
+        pix_on = general_tools.non_empty_lines(mod)
 
-        t = np.arange(l)/(20e6/2**7)
+        t = np.arange(l)/(config['fs']/2**config['power_to_fs2'])
         n_boxes=npix
         n_lines=6
         n_cols=7

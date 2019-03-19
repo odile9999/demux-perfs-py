@@ -149,3 +149,17 @@ def print_session_info(session_info):
     return()
     
 # -----------------------------------------------------------------------
+
+def non_empty_lines(table):
+    r"""
+        This function looks for empty lines in an 2 dimensionnal array.
+    """
+    n_lines = len(table[0,:])
+    non_empty_lines = np.ones((n_lines), dtype=bool)
+    for line in range(n_lines):
+        if np.abs(table[:,line]).max()==0:
+            non_empty_lines[line]=False
+    return(non_empty_lines)
+
+# ---------------------------------------------------------------------------
+

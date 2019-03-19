@@ -13,15 +13,14 @@ def analyse_and_plot(sig, t, f_res, nb, config, plot_str, plotfilename):
         print("Data stream is empty!")
         io_str=""
     else:
-        sigfdb, sig_carriers, sig_noise_power, io_str = makeanalysis(sig, f_res, nb, config)
+        sigfdb, sig_carriers, _, io_str = makeanalysis(sig, f_res, nb, config)
         if len(sig_carriers) == 0:
             sig_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
                                             # defined at 1MHz just to define a 
                                             # focus for the plot
         fmin = (sig_carriers[0] - config['ScBandMax']) / 1e6
         fmax = (sig_carriers[0] + config['ScBandMax']) / 1e6
-        makeplots(t, sig, nb, sigfdb, config["fs"], sig_noise_power, fmin, fmax, \
-                plot_str, plotfilename)
+        makeplots(t, sig, nb, sigfdb, config["fs"], fmin, fmax, plot_str, plotfilename)
     return(io_str)
                 
  
@@ -266,7 +265,7 @@ Noise power around carriers-> (dBFS / 2 x Binfo)\n\
 
 
 # -----------------------------------------------------------------------------
-def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilename):
+def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
     r"""
         This function plots a signal in time and frequency domain.
 
@@ -286,9 +285,6 @@ def makeplots(t, sig, nb, sigfdb, fs, Noise_Power, fmin, fmax, io_str, plotfilen
 
         fs : number
         The sampling frequency of the data.
-
-        Noise_Power : number
-        The maximum power measured in the science band around the carriers.
 
         fmin / fmax : numbers
         The limits of the x range for the frequency domain plots.
@@ -607,13 +603,13 @@ def process_dump_pulses(fulldirname, config):
         plt.savefig(plotfilename, bbox_inches='tight')
 
 # -----------------------------------------------------------------------
-def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_correction_factor_db, pix_zoom=40):
+def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_correction_factor_db, pix_zoom=40):
     r"""
         This function plots spectra of IQ data wrt the carriers.
                 
         Parameters
         ----------
-        sptdB : arrays
+        sptdb : arrays
         Spectra.
         
         config: dictionnary
@@ -632,7 +628,7 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
         Extension to be added to the plot file name.
 
         bw_correction_factor_db : number.
-        BW correction factor that has been applied to obtain the spectra in dB/Hz. This value needs to be 
+        BW correction factor that has been applied to obtain the spectra in dB.Hz. This value needs to be 
         indicated on the plot so that it can be taken into account when measuring spuriouses.
 
         pix_zoom: number
@@ -644,8 +640,8 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
         Nothing           
         """
 
-    npts = len(sptdB[0,:])
-    ncar = len(sptdB[:,0])
+    npts = len(sptdb[0,:])
+    ncar = len(sptdb[:,0])
     fs=float(config["fs"])/2**float(config["power_to_fs2"])
     f=np.arange(npts)*fs/(2*npts)
     impact_2_dacs = 3    # Because the test set-up involves two DACs (bias and feedback)
@@ -660,7 +656,7 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     # Plot for zoom pixel only
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1)
-    ax.semilogx(f[1:], sptdB[pix_zoom,1:])
+    ax.semilogx(f[1:], sptdb[pix_zoom,1:])
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
@@ -673,7 +669,7 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax.arrow(sc_band_max, -20, -sc_band_max+sc_band_min+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
     ax.axis([1, f[-1], -160, 0])
     ax.set_xlabel(r'Frequency (Hz)')
-    ax.set_ylabel(r'DRD (dBc/Hz)')
+    ax.set_ylabel(r'DRD (dBc.Hz)')
     ax.set_title(r'Pixel {0:2d}'.format(pix_zoom))
     # Major ticks every 20, minor ticks every 10
     major_ticks = np.arange(-160, 1, 20)
@@ -691,7 +687,7 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
         carrier_vs_fullscale_db=20*np.log10(fsr_over_peakpeak*2*cf*np.sqrt(ncar))
         ax2 = plt.gca().twinx()
         ax2.axis([f[1], f[-1], -160-carrier_vs_fullscale_db, 0-carrier_vs_fullscale_db])
-        ax2.set_ylabel(r'DRD (dBFS/Hz)')
+        ax2.set_ylabel(r'DRD (dBFS.Hz)')
         ax2.yaxis.label.set_weight('bold')
         ax2.yaxis.label.set_fontsize(17)
         for item in (ax2.get_yticklabels()):
@@ -707,7 +703,7 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     # Checking which pixel is on
     pix_on = np.ones((n_boxes), dtype=bool)
     for pix in range(n_boxes):
-        if sptdB[pix,1:].max()==sptdB[pix,1:].min():
+        if sptdb[pix,1:].max()==sptdb[pix,1:].min():
             pix_on[pix]=False
             print("\n------------------> Pixel {0:2d} is off.".format(pix))
 
@@ -715,7 +711,7 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     for box in range(n_boxes):
         if pix_on[box]:
             ax = fig.add_subplot(n_lines, n_cols, box+1)
-            ax.semilogx(f[1:], sptdB[box,1:])
+            ax.semilogx(f[1:], sptdb[box,1:])
             ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r')
             ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r')
             ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r')
@@ -728,7 +724,7 @@ def plot_spectra(sptdB, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
             else:
                 plt.xticks(visible=False)
             if box%n_cols == 0:
-                ax.set_ylabel(r'DRD (dBc/Hz)')
+                ax.set_ylabel(r'DRD (dBc.Hz)')
             else:
                 plt.yticks(visible=False)
             for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
@@ -1052,7 +1048,7 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
             ax.semilogx([sc_band_max, sc_band_max], [snr_pix_min, 0], ':r', linewidth=3)
             ax.text(40, -17, r'band of interest', fontsize=11)
             ax.text(sc_band_min, snr_pix_min-5, r'DRD requirement level', fontsize=11)
-            ax.text(1.5, -159, bw_res_warn, fontsize=11)
+            ax.text(1.5, -179, bw_res_warn, fontsize=11)
             L1, L2=100, 2.5
             ax.arrow(sc_band_min, -20, sc_band_max-L1, 0, head_width=3, head_length=L1, fc='k', ec='k')
             ax.arrow(sc_band_max, -20, -sc_band_max+sc_band_min+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
@@ -1060,7 +1056,7 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
             ax.set_ylim(-180, 0)
             ax.set_xlim(1, f[-1])
             ax.set_xlabel(r'Frequency (Hz)')
-            ax.set_ylabel(r'DRD (dBc/Hz)')
+            ax.set_ylabel(r'DRD (dBc.Hz)')
             ax.set_title(r'Test pixel')
             # Major ticks every 20, minor ticks every 10
             major_ticks = np.arange(-160, 1, 20)
@@ -1079,7 +1075,7 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
                 carrier_vs_full_scale_db=20*np.log10(fsr_over_peakpeak*2*cf*np.sqrt(ncar))
                 ax2 = plt.gca().twinx()
                 ax2.axis([f[1], f[-1], -160-carrier_vs_full_scale_db, 0-carrier_vs_full_scale_db])
-                ax2.set_ylabel(r'DRD (dBFS/Hz)')
+                ax2.set_ylabel(r'DRD (dBFS.Hz)')
                 ax2.yaxis.label.set_weight('bold')
                 ax2.yaxis.label.set_fontsize(17)
                 for item in (ax2.get_yticklabels()):

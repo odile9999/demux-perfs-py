@@ -51,6 +51,7 @@ def get_hk(fulldirname, config):
         print("Hk file not found.")
         hk = 0
     else:
+        print("Reading HKs...")
         hkfullfilename=os.path.join(hkdirname, hkfilename[0])
         with open(hkfullfilename, newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar='|')
@@ -59,20 +60,16 @@ def get_hk(fulldirname, config):
                 n = len(row)
                 if reader.line_num == 1:
                     keys = row
+                    for i in range(n):
+                        hk[keys[i]]=np.array([]) # Initialises an empty array
                 else:
-                    if reader.line_num == 2:
-                        for i in range(n):
-                            if keys[i] == 'Date':
-                                hk[keys[i]]=np.array([row[i]])
-                            else:
-                                hk[keys[i]]=np.array([float(row[i].replace(',','.'))])
-                    else:
-                        for i in range(n):
-                            if keys[i] == 'Date':
-                                hk[keys[i]] = np.append(hk[keys[i]], row[i])
-                            else:
-                                hk[keys[i]] = np.append(hk[keys[i]], float(row[i].replace(',','.')))
-        hk_lims = get_hk_lims(fulldirname, config, hk)
+                    for i in range(n):
+                        if keys[i] == 'Date':
+                            hk[keys[i]] = np.append(hk[keys[i]], row[i])
+                        else:
+                            hk[keys[i]] = np.append(hk[keys[i]], float(row[i].replace(',','.')))
+    
+    hk_lims = get_hk_lims(fulldirname, config, hk)
     return(hk, hk_lims)
 
 # -----------------------------------------------------------------------
@@ -96,6 +93,31 @@ def print_hk(hk):
         print(key, ': ', hk[key])
     
     return()
+
+# -----------------------------------------------------------------------
+
+def count_valid_hk(hk):
+    r"""
+        This function counts the number of valid hks in a HK dictionnary.
+        A HK is not valid when it is the date or its name starts with "DRE_Hks_".
+
+        Parameters
+        ----------
+        hk: Dictionnary
+
+        Returns
+        -------
+        n : integer
+        The number of valid hks.
+
+        """
+    n_valid_hk = 0
+    for key in hk.keys():
+        if key[0:8]!='DRE_Hks_' and key[1:9]!='DRE_Hks_' and key!='Date':
+            n_valid_hk = n_valid_hk+1 
+
+    return(n_valid_hk)
+
 # -----------------------------------------------------------------------
 
 def plot_hk(hk, hk_lims, fulldirname, config):
@@ -128,19 +150,14 @@ def plot_hk(hk, hk_lims, fulldirname, config):
     pltfilename2 = os.path.join(plotdirname, 'PLOT_HK_LIMS.png')
 
     # detection of valid hks
-    n_valid_hk = 0
-    for key in hk.keys():
-        if key[0:8]!='DRE_Hks_' and key[1:9]!='DRE_Hks_':
-            n_valid_hk = n_valid_hk+1 
-
-    n_valid_hk = n_valid_hk-1 # Date does not count as an HK
+    n_valid_hk = count_valid_hk(hk)
 
     n_cols = 4
     n_lines = n_valid_hk // n_cols
     if n_valid_hk % n_cols != 0:
         n_lines = n_lines+1
 
-    deltatime = np.array([(datetxt_to_date(hk['Date'][0]) - datetxt_to_date(hk['Date'][0])).total_seconds()])
+    deltatime = np.array([0])
     for i in range(len(hk['Date'])-1):
         deltatime = np.append(deltatime, (datetxt_to_date(hk['Date'][i+1])-datetxt_to_date(hk['Date'][0])).total_seconds())
 
@@ -207,6 +224,42 @@ def datetxt_to_date(datetxt):
 
 # -----------------------------------------------------------------------
 
+def init_hk_lims(hk):
+    r"""
+        This function initialises the limits of a set of HK.
+
+        Parameters
+        ----------
+        hk: Dictionnary
+        hk values.
+
+        Returns
+        -------
+        hk_lims: Dictionnary
+        hk limits set to defaut values.
+
+        """
+
+    default_hk_lims_dict={\
+            'lowalert': False, \
+            'lowalertv': 0, \
+            'lowwarn': False, \
+            'lowwarnv': 0, \
+            'highwarn': False, \
+            'highwarnv': 0, \
+            'highalert': False, \
+            'highalertv': 0
+            }
+
+    default_hk_lims_list={}
+    for key in hk.keys():
+        if key!='Date':
+            default_hk_lims_list[key]=default_hk_lims_dict.copy()
+
+    return(default_hk_lims_list)
+
+# -----------------------------------------------------------------------
+
 def get_hk_lims(fulldirname, config, hk):
     r"""
         This function gets the hk limits from a text file.
@@ -228,22 +281,8 @@ def get_hk_lims(fulldirname, config, hk):
         hk limits. 
 
         """
-
-    hk_lims_dict={\
-            'lowalert': False, \
-            'lowalertv': 0, \
-            'lowwarn': False, \
-            'lowwarnv': 0, \
-            'highwarn': False, \
-            'highwarnv': 0, \
-            'highalert': False, \
-            'highalertv': 0
-            }
-
-    hk_lims_list={}
-    for key in hk.keys():
-        if key!='Date' and key[1:9]!="DRE_Hks_":
-            hk_lims_list[key]=hk_lims_dict.copy()
+         
+    hk_lims_list = init_hk_lims(hk)    # Set hk limits to default values
 
     filename = 'parametersTF.dispatcher'
 
@@ -292,7 +331,7 @@ def print_hk_lims(hk_lims_list):
         """
 
     for key1 in hk_lims_list.keys():
-        if key1!='Date' and key1[1:9]!="DRE_Hks_":
+        if key1!='Date' and key1[1:9]!="DRE_Hks_" and key1[0:8]!="DRE_Hks_":
             print('-------------------------------')
             print(key1)
             for key2 in hk_lims_list[key1].keys():
