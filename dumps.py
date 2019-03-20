@@ -6,23 +6,16 @@ import get_data, general_tools
 
 
 # -----------------------------------------------------------------------------
-def analyse_and_plot(sig, t, f_res, nb, config, plot_str, plotfilename):
+def analyse_dump(sig, f_res, nb, config):
 
     print("------------------------------------")
+    f_carriers = np.array([])  
+    io_str=""
     if abs(sig).max()==0:
         print("Data stream is empty!")
-        io_str=""
     else:
-        sigfdb, sig_carriers, _, io_str = makeanalysis(sig, f_res, nb, config)
-        if len(sig_carriers) == 0:
-            sig_carriers = np.ones(1) * 1e6   # if no carriers, a virtual one is 
-                                            # defined at 1MHz just to define a 
-                                            # focus for the plot
-        fmin = (sig_carriers[0] - config['ScBandMax']) / 1e6
-        fmax = (sig_carriers[0] + config['ScBandMax']) / 1e6
-        makeplots(t, sig, nb, sigfdb, config["fs"], fmin, fmax, plot_str, plotfilename)
-    return(io_str)
-                
+        sigfdb, f_carriers, _, io_str = makeanalysis(sig, f_res, nb, config)
+    return(sigfdb, f_carriers, io_str)
  
 # -----------------------------------------------------------------------------
 def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
@@ -93,8 +86,6 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
         power2 = int(np.log(nval)/np.log(2))
         nval = int(2**power2)   
 
-        t = np.linspace(0, duration, nval)
-
         a = a[:nval]
         b = b[:nval]
         c = c[:nval]
@@ -133,31 +124,34 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
         flog.write(io_str3)
         flog.write(io_str4)
 
-        plot_str = ' Number of samples--> {0:8d}   Dump duration--> {1:6.2f} s   Frequency resolution--> {2:8.2f} Hz\n' \
+        plot_str = ', Number of samples--> {0:8d},   Dump duration--> {1:6.2f} s,   Resolution BW--> {2:8.2f} Hz\n' \
         .format(nval, nval / fs, fs / nval)
 
         ###########################################################################
+        print("Processing datastream of BIAS signal...")
+        cfdb, f_carriers, io_str = analyse_dump(c, f_res, nbc, config)
+        plot_dump(c, nbc, cfdb, f_carriers[0], config, "Signal "+name_c+plot_str, plotfilename_c)
+        io_str = '\
+    == Measurements on data stream ' + name_c + '\n\
+    =============================================================================\n' + io_str
+        flog.write(io_str)
+    
         print("Processing datastream of INPUT signal...")
-        io_str = analyse_and_plot(a, t, f_res, nba, config, "Signal "+name_a+plot_str, plotfilename_a)
+        afdb, _, io_str = analyse_dump(a, f_res, nba, config)
+        plot_dump(a, nba, afdb, f_carriers[0], config, "Signal "+name_a+plot_str, plotfilename_a)
         io_str = '\
     == Measurements on data stream ' + name_a + '\n\
     =============================================================================\n' + io_str
         flog.write(io_str)
 
         print("Processing datastream of FEEDBACK signal...")
-        io_str = analyse_and_plot(b, t, f_res, nbb, config, "Signal "+name_b+plot_str, plotfilename_b)
+        bfdb, _, io_str = analyse_dump(b, f_res, nbb, config)
+        plot_dump(b, nbb, bfdb, f_carriers[0], config, "Signal "+name_b+plot_str, plotfilename_b)
         io_str = '\
     == Measurements on data stream ' + name_b + '\n\
     =============================================================================\n' + io_str
         flog.write(io_str)
 
-        print("Processing datastream of BIAS signal...")
-        io_str = analyse_and_plot(c, t, f_res, nbc, config, "Signal "+name_c+plot_str, plotfilename_c)
-        io_str = '\
-    == Measurements on data stream ' + name_c + '\n\
-    =============================================================================\n' + io_str
-        flog.write(io_str)
-    
         flog.close()
 
     print("Done!")
@@ -190,7 +184,7 @@ def makeanalysis(sig, df, nb, config):
         The signal in frequency domain and expressed in dB FSR.
 
         carriers : array_like
-        Indexes of detected peaks according to the input array
+        Frequency of detected peaks according to the input array
 
         Noise_Power : number
         The maximum power measured in the science band around the carriers.
@@ -265,15 +259,12 @@ Noise power around carriers-> (dBFS / 2 x Binfo)\n\
 
 
 # -----------------------------------------------------------------------------
-def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
+def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
     r"""
         This function plots a signal in time and frequency domain.
 
         Parameters
         ----------
-        t : array_like
-        The time series (x values of time domain plots)
-
         sig : array_like
         The data in time domain.
 
@@ -283,11 +274,11 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
         sigfdb : array_like
         The data in frequency domain (expressed in dbFSR)
 
-        fs : number
-        The sampling frequency of the data.
+        f_car : number
+        Frequency of the carrier we wabt to focus on.
 
-        fmin / fmax : numbers
-        The limits of the x range for the frequency domain plots.
+        config : dictionnary
+        Contains path and constants definitions
 
         io_str : string
         text to be displayed on the plot
@@ -300,6 +291,11 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
         Nothing
 
     """
+
+    fs = config["fs"]
+    f_res = (fs/2)/len(sigfdb) # frequency resolution
+    i_car = int(f_car / f_res) # position of the carrier in the frequency vector
+
     cf = crestfactor(sig-sig.mean())
     moyenne = sig.mean()
     moyenne_dbfs = 20*np.log10(2**nb/np.abs(moyenne))
@@ -310,7 +306,7 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
 
     f = np.linspace(0, fs/2, len(sigfdb))
     L1 = 1024         # length of time plot (long)
-    fig = plt.figure(figsize=(11, 8))
+    fig = plt.figure(figsize=(11, 12))
     fig.text(0.05, 0.98, io_str, family='monospace')
     ytimetitle = "amplitude"
     yfreqtitle = "amplitude (dB FSR)"
@@ -321,6 +317,8 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
     noise_req = -156
 
     # setting of the plot-ranges
+    fxmin = (f_car - config['ScBandMax']) / 1e6
+    fxmax = (f_car + config['ScBandMax']) / 1e6
     fxmin2 = 0.7
     fxmax2 = 5.2
     fymin = -180
@@ -329,7 +327,8 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
     #####################################################################
     # Plotting data in time domain
 
-    ax1 = fig.add_subplot(2, 2, 1)
+    t = np.arange(len(sig))/fs
+    ax1 = fig.add_subplot(3, 2, 1)
     ax1.plot(1000*t[0:L1], sig[0:L1], 'b')
     ax1.text(0, 2**(nb-1)*0.75, io_str2, color='b')
     ax1.set_ylabel(ytimetitle)
@@ -340,7 +339,7 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
     #####################################################################
     # Plotting data in frequency domain
 
-    ax2 = fig.add_subplot(2, 2, 2)
+    ax2 = fig.add_subplot(3, 2, 2)
     ax2.plot(f/1e6, sigfdb, 'b', linewidth=1)
     if nb==16:
         ax2.plot([0, f[-1]], [all_sines_rms_level, all_sines_rms_level], '--g', linewidth=1.5)
@@ -350,7 +349,7 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
     ax2.grid(color='k', linestyle=':', linewidth=0.5)
     ax2.axis([0, fs/2 / 1e6, fymin, fymax])
 
-    ax3 = fig.add_subplot(2, 2, 3)
+    ax3 = fig.add_subplot(3, 2, 3)
     ax3.plot(f / 1e6, sigfdb, 'b', linewidth=1)
     if nb==16:
         ax3.plot([0, f[-1]], [all_sines_rms_level, all_sines_rms_level], '--g', linewidth=1.5)
@@ -360,7 +359,7 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
     ax3.grid(color='k', linestyle=':', linewidth=0.5)
     ax3.axis([fxmin2, fxmax2, fymin, fymax])
 
-    ax4 = fig.add_subplot(2, 2, 4)
+    ax4 = fig.add_subplot(3, 2, 4)
     ax4.plot(f / 1e6, sigfdb, 'b', linewidth=1)
     ax4.plot(f / 1e6, sigfdb, '.r')
     if nb==16:
@@ -369,7 +368,20 @@ def makeplots(t, sig, nb, sigfdb, fs, fmin, fmax, io_str, plotfilename):
     ax4.set_ylabel(yfreqtitle)
     ax4.set_xlabel('Frequency (MHz)')
     ax4.grid(color='k', linestyle=':', linewidth=0.5)
-    ax4.axis([fmin, fmax, fymin, fymax])
+    ax4.axis([fxmin, fxmax, fymin, fymax])
+
+    ax5 = fig.add_subplot(3, 1, 3)
+    npts = 50000
+    f_shift = np.linspace(0, fs/2, len(sigfdb)) - f_car # frequency vector shifted around f_car
+    delta = 0.1
+    f_shift[i_car]+=delta # slight shift to allow xlog plot
+    ax5.semilogx(f_shift[i_car:i_car+npts], sigfdb[i_car:i_car+npts], 'b', linewidth=1)
+    ax5.set_ylabel("amplitude (dB FSR)")
+    ax5.set_xlabel('Offset wrt carrier frequency (Hz)')
+    ax5.grid(color='k', linestyle=':', linewidth=0.5)
+    ax5.set_xlim(delta, f_shift[i_car+npts])
+    ax5.set_ylim(-200, 0)
+    ax5.text(delta*2, -10, 'Carrier frequency: {0:5.0f}MHz'.format(f_car))
 
     fig.tight_layout()
     #plt.show()
