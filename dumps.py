@@ -383,10 +383,36 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
     ax5.set_ylim(-200, 0)
     ax5.text(delta*2, -10, 'Carrier frequency: {0:5.0f}MHz'.format(f_car))
 
+    # Plotting spuriouses for the BIAS signal
+    if plotfilename[-8:-4]=="BIAS":
+        i_spurs = spurdetect(sigfdb[i_car:i_car+npts])
+        n_spurs = len(i_spurs)
+        spurs_mean = (sigfdb[i_car+i_spurs]-sigfdb[i_car]).mean()
+        i_spur_max = np.where(sigfdb[i_car+i_spurs] == sigfdb[i_car+i_spurs].max())
+        f_spur_max = f_shift[i_car+i_spurs[i_spur_max]]
+        spur_max = sigfdb[i_car+i_spurs[i_spur_max]]
+        spur_max_text = '{0:5.1f}dBc'.format((spur_max-sigfdb[i_car])[0])
+        general_spur_text = '{0:2d} spurious detected in the plot range,\n'.format(n_spurs) \
+            +'Stronger spurious measured at {0:5d}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                .format(int(f_spur_max[0]), (spur_max-sigfdb[i_car])[0]) \
+            +'Mean spurious value: {0:5.1f}dBc (mean of dB values)'.format(spurs_mean)
+        ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs],'*g')
+        ax5.semilogx(f_spur_max, spur_max,'*r')
+        ax5.text(f_spur_max, spur_max+5, spur_max_text, horizontalalignment='center', color='red')
+        ax5.text(3, -75, general_spur_text)
+
     fig.tight_layout()
     #plt.show()
     plt.savefig(plotfilename, bbox_inches='tight')
     print('Plots done')
+
+# -----------------------------------------------------------------------------
+def spurdetect(sig, margin=6):
+
+    delta1 = sig - np.concatenate((sig[1:], [sig[-1]]))
+    delta2 = sig - np.concatenate(([sig[0]], sig[:-1]))
+    return(np.intersect1d(np.where(delta1 > margin)[0], np.where(delta2 > margin)[0]))
+
 
 # -----------------------------------------------------------------------------
 def peakdetect(sig, margin=6):
@@ -614,6 +640,39 @@ def process_dump_pulses(fulldirname, config):
         #plt.show()
         plt.savefig(plotfilename, bbox_inches='tight')
 
+def mosaic_labels(ax, box, n_cols, n_lines, x_lab, y_lab):
+    r"""
+        This function defines the xlabel and ylabel for a plot in a plot mosaic.
+        The xlabel is displayed only for the plots at the bottom of the mosaic.
+        The ylabel is displayed only for the plots at the left of the mosaic.
+
+        Parameters
+        ----------
+        ax : matplotlib axis
+
+        box : number
+        the number of the plot in the mosaic
+
+        n_cols, n_lines : numbers
+        the number of columns and lines in the mosaic
+
+        x_lab, y_lab : string
+        the x and y labels
+
+        Returns
+        -------
+        Nothing
+
+        """
+    if box//n_cols == n_lines-1:
+        ax.set_xlabel(x_lab)
+    else:
+        plt.xticks(visible=False)
+    if box%n_cols == 0:
+        ax.set_ylabel(y_lab)
+    else:
+        plt.yticks(visible=False)
+
 # -----------------------------------------------------------------------
 def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_correction_factor_db, pix_zoom=40):
     r"""
@@ -669,6 +728,8 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1)
     ax.semilogx(f[1:], sptdb[pix_zoom,1:])
+    i_spurs = spurdetect(sptdb[pix_zoom,:])
+    ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs],'*')
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
@@ -731,14 +792,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
             ax.axis([f[1], f[-1], -160, 0])
             ax.grid(color='k', linestyle=':', linewidth=0.5)
             ax.set_title(r'Pixel {0:2d}'.format(box))
-            if box//n_cols == n_lines-1:
-                ax.set_xlabel(r'Frequency (Hz)')
-            else:
-                plt.xticks(visible=False)
-            if box%n_cols == 0:
-                ax.set_ylabel(r'DRD (dBc.Hz)')
-            else:
-                plt.yticks(visible=False)
+            mosaic_labels(ax, box, n_cols, n_lines, r'Frequency (Hz)', r'DRD (dBc.Hz)')
             for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]):
                 item.set_fontsize(15)
             for item in (ax.get_xticklabels() + ax.get_yticklabels()):
