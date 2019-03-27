@@ -396,10 +396,12 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
             +'Stronger spurious measured at {0:5d}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
                 .format(int(f_spur_max[0]), (spur_max-sigfdb[i_car])[0]) \
             +'Mean spurious value: {0:5.1f}dBc (mean of dB values)'.format(spurs_mean)
-        ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs],'*g')
-        ax5.semilogx(f_spur_max, spur_max,'*r')
+        ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs], 'o', color='orange')
+        ax5.semilogx(f_spur_max, spur_max, color='red', marker='*')
         ax5.text(f_spur_max, spur_max+5, spur_max_text, horizontalalignment='center', color='red')
         ax5.text(3, -75, general_spur_text)
+
+        np.save('BIAS_dump_spectra.npy', ([f_shift[i_car:i_car+npts], sigfdb[i_car:i_car+npts]]))
 
     fig.tight_layout()
     #plt.show()
@@ -729,7 +731,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax = fig.add_subplot(1, 1, 1)
     ax.semilogx(f[1:], sptdb[pix_zoom,1:])
     i_spurs = spurdetect(sptdb[pix_zoom,:])
-    ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs],'*')
+    ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs], 'o', color='orange')
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
