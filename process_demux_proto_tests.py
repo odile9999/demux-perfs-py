@@ -25,10 +25,7 @@ def process_demux_proto_tests(dirname):
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
     channel=0
-    dumptype = "IQ-ALL"
-    gbw.process_gbw(fulldirname, config, dumptype, channel)
-    dumptype = "IQ-TST"
-    gbw.process_gbw(fulldirname, config, dumptype, channel)
+    gbw.process_gbw(fulldirname, config, channel)
 
     # -----------------------------------------------------------------------
     # Processing "Carriers spectra characterization"

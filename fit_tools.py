@@ -27,8 +27,7 @@ def l_gauss(x, e, a):
     - name is the line name to import right data (string)
     - bool_cont (boolean) if noise is done or not
     Returns function for lsq or other minimization algorithms
-    """
-    
+    """   
     import numpy as np
 
     weights=np.ones(len(a))
@@ -91,3 +90,44 @@ def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
                 .format(np.sum(hist), coeff[1], nl_at_7kev, abs(coeff[2])*2.35482, nl_at_7kev*abs(coeff[2])*2.35482), **axis_font)
         plt.savefig(pltfilename+'.png', bbox_inches='tight')
 
+def low_pass(f, k, pi2rc):
+    """
+    Creates a low pass filter transfer function with f values.
+    - f is the axis (np.array)
+    - k is the DC level (np.float)
+    - pi2rc is equal to the value of 2xPixRC for the equivalent RC low pass filter (np.float)
+    """
+    import numpy as np
+    return k/np.sqrt(1.+(f*pi2rc)**2)
+
+def l_low_pass(x, f, a):
+    """
+    Returns the line function 
+    - x is an array containing the function parameters
+    - f is an array with the frequencies
+    - a is an array with the data to fit
+    Returns function for lsq or other minimization algorithms
+    """   
+    import numpy as np
+
+    weights=np.ones(len(a))
+    weights[a>0]=1/np.sqrt(a[a>0])
+    return np.sum(((low_pass(f, x[0], x[1])-a)/weights)**2)
+
+def low_pass_fit(freqs, array_to_fit):
+    """ 
+    Takes ans array of numbers and fits a low pass filter function on it
+    - array_to_fit is the array to be fitted (np.array)
+    Returns optimal coefficients for the fit
+    """
+    import numpy as np
+    from scipy.optimize import minimize
+
+    p0=[array_to_fit[0], 1/(15e3)]
+    res = minimize(l_low_pass, p0, args=(freqs, array_to_fit), method='Powell', 
+                        tol=1e-20, options={'maxiter':1000000, 'ftol': 1e-20})
+
+    if res.success==False:
+        print("Fit dit not converge")
+
+    return res.x

@@ -3,7 +3,7 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import get_data, general_tools
+import get_data, general_tools, fit_tools
 
 # -----------------------------------------------------------------------
 def get_files_freq(fulldirname, dumptype):
@@ -89,19 +89,15 @@ def color_ok(val, val_min, val_max):
     return(color_ok)
 
 # -----------------------------------------------------------------------
-def process_gbw(fulldirname, config, dumptype, chan):
+def get_gbw_freq_and_amp(datadirname, dumptype, chan):
     r"""
-        This function reads data from several DRE IQ data files
-        to compute the Gain BadWidth product (GBW).
+        This function reads data from several DRE data files and measures
+        the amplitude of the signal as a function of the frequency.
         
         Parameters
         ----------
-        fulldirname : string
+        datadirname : string
         The name of the directory containing the data files
-        (no path)
-
-        config : dictionnary
-        Contains path and constants definitions
 
         dumptype : defines the kind of files we are interested in.
         "IQ_ALL" or "IQ_TES"
@@ -116,31 +112,23 @@ def process_gbw(fulldirname, config, dumptype, chan):
 
         amplitude:
         amplitude measured at each frequency 
+
+        gain_dre:
+        value of the DRE gain parameter
         """
-    fs = config["fs"]
     pix_test=40
-
-    datadirname = os.path.join(fulldirname, config['dir_data'])
-    plotdirname = os.path.join(fulldirname, config['dir_plots'])
-    general_tools.checkdir(plotdirname)
-
-    if dumptype == "IQ-ALL":
-        pltfilename = os.path.join(plotdirname, "PLOT_GBW_FILTERED.png")
-    else:
-        pltfilename = os.path.join(plotdirname, "PLOT_GBW_UNFILTERED.png")
-
     fichlist, f = get_files_freq(datadirname, dumptype)
+    i_gain_deb, i_gain_fin = 46, -4
+    gain_dre = fichlist[0][i_gain_deb: i_gain_fin]
+
+    amplitudes = []
 
     if fichlist !=0:
         nfiles = len(fichlist)
-        amplitudes = np.zeros(nfiles)
-
         print("{0:3d} files to process...".format(nfiles))
-        file_nb=0
 
         for fich in fichlist:
-            print('Processing file {0:3d}/{1:3d} '.format(file_nb, nfiles), end='')
-            print(fich)
+            print('Processing file ' + fich)
             if dumptype=="IQ-ALL":
                 chan0_i, chan0_q, chan1_i, chan1_q, _ = get_data.read_iq(os.path.join(datadirname, fich))
                 if chan==0:
@@ -153,41 +141,85 @@ def process_gbw(fulldirname, config, dumptype, chan):
                 data, _ = get_data.readfile(os.path.join(datadirname, fich))
                 modulus = np.sqrt(data[1:,0].astype('float')**2 + data[1:,1].astype('float')**2)
 
-            amplitudes[file_nb]=np.max(modulus)-np.min(modulus)
+            amplitudes=np.append(amplitudes, modulus.max()-modulus.min())
+    
+    return(f, amplitudes, gain_dre)
                     
-            file_nb+=1
+# -----------------------------------------------------------------------
+def process_gbw(fulldirname, config, chan):
+    r"""
+        This function reads data from several DRE IQ data files
+        to compute the Gain BadWidth product (GBW).
+        
+        Parameters
+        ----------
+        fulldirname : string
+        The name of the directory containing the data files
 
-        a_db = 20*np.log10(amplitudes/np.max(amplitudes))
-        # Measuring 3dB BW
-        i_bw = get_bw(a_db, 3)
-        gbw = f[i_bw]
-        gbw_min = 12e3
-        gbw_max = 18e3
+        config : dictionnary
+        Contains path and constants definitions
+
+        chan : number
+        Specifies the channel to be processed (0 or 1)
+
+        Returns
+        ------- 
+        frequency: array
+        frequencies used for the test
+
+        amplitude:
+        amplitude measured at each frequency 
+        """
+    fs = config["fs"]
+
+    datadirname = os.path.join(fulldirname, config['dir_data'])
+    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    general_tools.checkdir(plotdirname)
+
+    pltfilename = os.path.join(plotdirname, "PLOT_GBW.png")
+
+    f, a, gain_dre = get_gbw_freq_and_amp(datadirname, "IQ-TST", chan)
+
+    if len(f) > 0:
+        a_db = 20*np.log10(a/a.max())
+
+        # Fit of the transfer function and measurement of the GBP
+        fit_params=fit_tools.low_pass_fit(f, a)
+        f_high_res = np.linspace(1, 1e6, num=1e5)
+        fit = fit_tools.low_pass(f_high_res, fit_params[0], fit_params[1])
+        fit_db = 20*np.log10(fit/fit.max())
+        gbw = 1./fit_params[1]
+
+        min_amp_db, max_amp_db = -80, 10
+        gbw_min, gbw_max = 13e3, 17e3
         fs_sur2 = fs/(2*2**7)
-
-        i_gain_deb, i_gain_fin = 46, -4
-        gain_dre = fichlist[0][i_gain_deb: i_gain_fin]
 
         gbw_color = color_ok(gbw, gbw_min, gbw_max)
 
         # Plot
-        comment1 = 'Readout type is ' + dumptype
-        comment2 = 'Channel {0:1d}'.format(chan)
-        comment3 = 'GainDRE = ' + gain_dre
-        comment4 = 'GBW = {0:6.0f} Hz'.format(gbw) 
-        fig = plt.figure(figsize=(7, 5))
-        min_amp_db, max_amp_db = -80, 10
+        fig = plt.figure(figsize=(8, 6))
         ax = fig.add_subplot(1, 1, 1)
-        ax.semilogx(f, a_db, '.')
-        ax.semilogx([gbw, gbw], [min_amp_db, a_db[i_bw]], '--', color='b', label='Measured bandwidth')
-        ax.semilogx([gbw_min, gbw_min], [min_amp_db, max_amp_db], '--', color='r', label='Bandwidth limits')
-        ax.semilogx([gbw_max, gbw_max], [min_amp_db, max_amp_db], '--', color='r')
-        ax.semilogx([fs_sur2, fs_sur2], [min_amp_db, max_amp_db], '-', color='k', label='Fs / 2')
+        ax.semilogx(f, a_db, 's', label='Before decimation filter')
+        ax.semilogx(f_high_res, fit_db, color='k', label='LPF 1st order fit')
+
+        # Processing filtered data
+        f2, a2, _ = get_gbw_freq_and_amp(datadirname, "IQ-ALL", chan)
+        if len(f2) > 0:
+            a2_db = 20*np.log10(a2/a2.max())
+            ax.semilogx(f2, a2_db, '.', label='After decimation filter')
+
+        ax.semilogx([gbw, gbw], [min_amp_db, max_amp_db], '--', color='b', label='BBFB Gain Bandwidth Product')
+
+        # Adding some references and text on the plot
+        comment1 = 'Channel {0:1d}'.format(chan)
+        comment2 = 'GainDRE = ' + gain_dre
+        comment3 = 'GBW = {0:6.0f} Hz'.format(gbw)
+        ax.semilogx([fs_sur2, fs_sur2], [min_amp_db, max_amp_db], '--', color='k' , linewidth=0.5 , label='Fs / 2')
+        ax.text(20, min_amp_db + 35, comment1, color='b')
+        ax.text(20, min_amp_db + 30, comment2, color='b')
+        ax.text(20, min_amp_db + 25, comment3, color=gbw_color)
+
         ax.legend()
-        ax.text(20, min_amp_db + 40, comment1, color='b')
-        ax.text(20, min_amp_db + 35, comment2, color='b')
-        ax.text(20, min_amp_db + 30, comment3, color='b')
-        ax.text(20, min_amp_db + 25, comment4, color=gbw_color)
         ax.axis([10, 1e6, min_amp_db, max_amp_db])
         ax.set_xlabel(r'Frequency (Hz)')
         ax.set_ylabel(r'Amplitude (dB)')
