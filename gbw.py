@@ -199,14 +199,14 @@ def process_gbw(fulldirname, config, chan):
         # Plot
         fig = plt.figure(figsize=(8, 6))
         ax = fig.add_subplot(1, 1, 1)
-        ax.semilogx(f, a_db, 's', label='Before decimation filter')
-        ax.semilogx(f_high_res, fit_db, color='k', label='LPF 1st order fit')
+        ax.semilogx(f, a_db, 's', label='Transfer function before decimation filter')
+        ax.semilogx(f_high_res, fit_db, color='k', label='Fit (LPF 1st order)')
 
         # Processing filtered data
         f2, a2, _ = get_gbw_freq_and_amp(datadirname, "IQ-ALL", chan)
         if len(f2) > 0:
             a2_db = 20*np.log10(a2/a2.max())
-            ax.semilogx(f2, a2_db, '.', label='After decimation filter')
+            ax.semilogx(f2, a2_db, '.', label='Transfer function after decimation filter')
 
         ax.semilogx([gbw, gbw], [min_amp_db, max_amp_db], '--', color='b', label='BBFB Gain Bandwidth Product')
 
