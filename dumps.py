@@ -6,7 +6,7 @@ import get_data, general_tools
 
 
 # -----------------------------------------------------------------------------
-def analyse_dump(sig, f_res, nb, config):
+def analyse_dump(sig, nb, config):
 
     print("------------------------------------")
     f_carriers = np.array([])  
@@ -14,11 +14,11 @@ def analyse_dump(sig, f_res, nb, config):
     if abs(sig).max()==0:
         print("Data stream is empty!")
     else:
-        sigfdb, f_carriers, _, io_str = makeanalysis(sig, f_res, nb, config)
+        sigfdb, f_carriers, _, io_str = makeanalysis(sig, nb, config)
     return(sigfdb, f_carriers, io_str)
  
 # -----------------------------------------------------------------------------
-def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
+def process_dump(fulldirname, config, max_duration=0.2):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
         
@@ -30,9 +30,6 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
         config : dictionnary
         Contains path and constants definitions
 
-        fs : number, optional
-        Sampling frequency (default is 20 MHz)
-
         Max_duration : number, optional
         Maximum duration in seconds to be considered for analysis (default is 1)
 
@@ -42,6 +39,7 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
 
         """
 
+    fs = float(config["fs"])
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
     general_tools.checkdir(plotdirname)
@@ -129,7 +127,7 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
 
         ###########################################################################
         print("Processing datastream of BIAS signal...")
-        cfdb, f_carriers, io_str = analyse_dump(c, f_res, nbc, config)
+        cfdb, f_carriers, io_str = analyse_dump(c, nbc, config)
         plot_dump(c, nbc, cfdb, f_carriers[0], config, "Signal "+name_c+plot_str, plotfilename_c)
         io_str = '\
     == Measurements on data stream ' + name_c + '\n\
@@ -137,7 +135,7 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
         flog.write(io_str)
     
         print("Processing datastream of INPUT signal...")
-        afdb, _, io_str = analyse_dump(a, f_res, nba, config)
+        afdb, _, io_str = analyse_dump(a, nba, config)
         plot_dump(a, nba, afdb, f_carriers[0], config, "Signal "+name_a+plot_str, plotfilename_a)
         io_str = '\
     == Measurements on data stream ' + name_a + '\n\
@@ -145,7 +143,7 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
         flog.write(io_str)
 
         print("Processing datastream of FEEDBACK signal...")
-        bfdb, _, io_str = analyse_dump(b, f_res, nbb, config)
+        bfdb, _, io_str = analyse_dump(b, nbb, config)
         plot_dump(b, nbb, bfdb, f_carriers[0], config, "Signal "+name_b+plot_str, plotfilename_b)
         io_str = '\
     == Measurements on data stream ' + name_b + '\n\
@@ -159,7 +157,7 @@ def process_dump(fulldirname, config, fs=20e6, max_duration=0.2):
 
 # -----------------------------------------------------------------------------
 
-def makeanalysis(sig, df, nb, config):
+def makeanalysis(sig, nb, config):
     r"""
         This function does the analysis of a signal. In time domain (measurment
         of the power) but mostly in frequency domain (fft, normalisation, ...).
@@ -168,9 +166,6 @@ def makeanalysis(sig, df, nb, config):
         ----------
         sig : array_like
         The (time domain) signal to be analysed.
-
-        df : number
-        The spectral resolution of the signal.
 
         nb : number
         Number of bits used to code the digital signal (16 for the DAC).
@@ -193,8 +188,10 @@ def makeanalysis(sig, df, nb, config):
         The log message.
 
     """
-    
+
     nval=len(sig)
+    df = float(config["fs"])/nval    # spectral resolution
+
     #######################################################################
     # Computation of fft
     sigf = abs(rfft(sig))
@@ -534,9 +531,6 @@ def process_dump_pulses(fulldirname, config):
         config : dictionnary
         Contains path and constants definitions
 
-        fs : number, optional
-        Sampling frequency (default is 20 MHz)
-
         Returns
         -------
         Nothing
@@ -862,14 +856,12 @@ def process_iq_multi(fulldirname, config, pix_zoom=40, window=False, bw_correcti
         
         Parameters
         ----------
-        dirname : string
+        fulldirname : string
         The name of the directory containing the data files
-        (no path)
         
-        fs: number
-        The data sampling rate at DAC and ADC .
-        (default value is 20e6)
-        
+        config: dictionnary
+        contains usefull parameters
+
         pix_zoom: number
         The id of a pixel to be zoomed in.
         (default value is 40 = test pixel)
@@ -986,13 +978,11 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
         
         Parameters
         ----------
-        dirname : string
+        fulldirname : string
         The name of the directory containing the data files
-        (no path)
         
-        fs: number
-        The data sampling rate at DAC and ADC .
-        (default value is 20e6)
+        config: dictionnary
+        contains usefull parameters
         
         window: boolean
         Specifies if a windowing shall be done before the FFT.
