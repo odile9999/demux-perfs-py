@@ -74,12 +74,11 @@ def process_dump_dds(fulldirname, config, max_duration=0.2):
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
     general_tools.checkdir(plotdirname)
     nba, name_a = 19, "DDS" 
-    nbb, name_b = 27, "DDSxAMP" 
+    nbb, name_b = 27, "DDSxAMP"
     nbc, name_c = 16, "DDSxAMP_TRUNCATED" 
     plotfilename_a = os.path.join(plotdirname, "PLOT_DUMP_" + name_a + ".png")
     plotfilename_b = os.path.join(plotdirname, "PLOT_DUMP_" + name_b + ".png")
     plotfilename_c = os.path.join(plotdirname, "PLOT_DUMP_" + name_c + ".png")
-
 
     dumpfilenames1 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
@@ -98,8 +97,6 @@ def process_dump_dds(fulldirname, config, max_duration=0.2):
         print("Reading data from file "+dumpfilenames2[0])
         b = readfile_dump_dds(dumpfilename2).astype('float')
 
-        np.save(os.path.join(datadirname, "dumps_dds.npy"),([a, b]))
-
         nval=len(a)
         duration = (nval/fs)
 
@@ -115,7 +112,7 @@ def process_dump_dds(fulldirname, config, max_duration=0.2):
         b = b[:nval]
 
         # Impact of truncation on 16 bits
-        margin=1.9 # Margin wrt FSR
+        margin=32 # margin wrt FSR / PeakPeak1
         c = np.round((b*(2**(nbc-1))/b.max())/margin)
 
         f_res = fs / nval
