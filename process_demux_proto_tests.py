@@ -2,6 +2,7 @@ import general_tools
 import hk_tools
 import gbw
 import dumps
+import dumps_dds
 import energy_resol
 import baseline
 import os
@@ -21,6 +22,7 @@ def process_demux_proto_tests(dirname):
     # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
     dumps.process_dump(fulldirname, config, max_duration=1.0)
+    dumps_dds.process_dump_dds(fulldirname, config, max_duration=1.0)
 
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
