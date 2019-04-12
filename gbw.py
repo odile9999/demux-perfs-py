@@ -48,7 +48,7 @@ def get_files_freq(fulldirname, dumptype):
             fichlist[file_nb]=name 
             freqs[file_nb]=float(name[i_freq_deb:i_freq_fin])
     else:
-        fichlist=freqs=0 
+        fichlist=freqs=[] 
     return(fichlist, freqs)
         
 # -----------------------------------------------------------------------
@@ -119,11 +119,11 @@ def get_gbw_freq_and_amp(datadirname, dumptype, chan):
     pix_test=40
     fichlist, f = get_files_freq(datadirname, dumptype)
     i_gain_deb, i_gain_fin = 46, -4
-    gain_dre = fichlist[0][i_gain_deb: i_gain_fin]
 
-    amplitudes = []
+    amplitudes, gain_dre = [], 0
 
-    if fichlist !=0:
+    if len(fichlist) !=0:
+        gain_dre = fichlist[0][i_gain_deb: i_gain_fin]
         nfiles = len(fichlist)
         print("{0:3d} files to process...".format(nfiles))
 

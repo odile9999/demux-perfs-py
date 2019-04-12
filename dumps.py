@@ -48,13 +48,13 @@ def process_dump(fulldirname, config, max_duration=0.2):
     nbb, name_b = 16, "FBCK" # FEEDBACK signal over 16 bits
     nbc, name_c = 16, "BIAS" # BIAS signal over 16 bits
 
-    f_type_deb, f_type_fin = 21, 27
+    f_type_deb = 21
     dumpfilenames1 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[-4:]=='.dat' and f[f_type_deb:f_type_fin]=="IN-FBK"]
+                and f[f_type_deb:]=="IN-FBK.dat"]
     dumpfilenames2 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[-4:]=='.dat' and f[f_type_deb:f_type_fin]=="IN-BIA"]
+                and f[f_type_deb:]=="IN-BIA.dat"]
 
     if len(dumpfilenames1)>0 and len(dumpfilenames2)>0:
         dumpfilename1 = os.path.join(datadirname, dumpfilenames1[0])

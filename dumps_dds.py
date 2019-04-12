@@ -76,9 +76,13 @@ def process_dump_dds(fulldirname, config, max_duration=0.2):
     nba, name_a = 19, "DDS" 
     nbb, name_b = 27, "DDSxAMP"
     nbc, name_c = 16, "DDSxAMP_TRUNCATED" 
+    nbd, name_d = 21, "ADDER_IN" 
+    nbe, name_e = 27, "ADDER_OUT"
     plotfilename_a = os.path.join(plotdirname, "PLOT_DUMP_" + name_a + ".png")
     plotfilename_b = os.path.join(plotdirname, "PLOT_DUMP_" + name_b + ".png")
     plotfilename_c = os.path.join(plotdirname, "PLOT_DUMP_" + name_c + ".png")
+    plotfilename_d = os.path.join(plotdirname, "PLOT_DUMP_" + name_d + ".png")
+    plotfilename_e = os.path.join(plotdirname, "PLOT_DUMP_" + name_e + ".png")
 
     dumpfilenames1 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
@@ -86,16 +90,28 @@ def process_dump_dds(fulldirname, config, max_duration=0.2):
     dumpfilenames2 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-11:]=="DDSout2.dat"]
+    dumpfilenames3 = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[-11:]=="DDSout3.dat"]
+    dumpfilenames4 = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[-11:]=="DDSout4.dat"]
 
-    if len(dumpfilenames1)>0 and len(dumpfilenames2)>0:
+    if len(dumpfilenames1)>0 and len(dumpfilenames2)>0 and len(dumpfilenames3)>0 and len(dumpfilenames4)>0:
         dumpfilename1 = os.path.join(datadirname, dumpfilenames1[0])
         dumpfilename2 = os.path.join(datadirname, dumpfilenames2[0])
+        dumpfilename3 = os.path.join(datadirname, dumpfilenames3[0])
+        dumpfilename4 = os.path.join(datadirname, dumpfilenames4[0])
 
         # Getting the data from dump file
         print("Reading data from file "+dumpfilenames1[0])
         a = readfile_dump_dds(dumpfilename1).astype('float')
         print("Reading data from file "+dumpfilenames2[0])
         b = readfile_dump_dds(dumpfilename2).astype('float')
+        print("Reading data from file "+dumpfilenames3[0])
+        d = readfile_dump_dds(dumpfilename3).astype('float')
+        print("Reading data from file "+dumpfilenames4[0])
+        e = readfile_dump_dds(dumpfilename4).astype('float')
 
         nval=len(a)
         duration = (nval/fs)
@@ -110,6 +126,8 @@ def process_dump_dds(fulldirname, config, max_duration=0.2):
 
         a = a[:nval]
         b = b[:nval]
+        d = d[:nval]
+        e = e[:nval]
 
         # Impact of truncation on 16 bits
         margin=32 # margin wrt FSR / PeakPeak1
@@ -122,33 +140,40 @@ def process_dump_dds(fulldirname, config, max_duration=0.2):
         print("This signal uses {0:3.2f} bits".format(nba_real))
         plot_str = ', Nb samples-> {0:8d},  Dump duration-> {1:6.2f} s,  RBW-> {2:8.2f} Hz,  nbits-> {3:3.2f}\n' \
         .format(nval, nval / fs, fs / nval, nba_real)
-        afdb, f_carriers, io_str = analyse_dump(a, nba, config)
+        afdb, f_carriers, _ = analyse_dump(a, nba, config)
         plot_dump(a, nba, afdb, f_carriers[0], config, "Signal "+name_a+plot_str, plotfilename_a)
-        io_str = '\
-== Measurements on data stream ' + name_a + '\n\
-=============================================================================\n' + io_str
 
         print("Processing datastream of DDSxAMP signal...")
         nbb_real=np.log10(b.max()-b.min())/np.log10(2)
         print("This signal uses {0:3.2f} bits".format(nbb_real))
         plot_str = ', Nb samples-> {0:8d},  Dump duration-> {1:6.2f} s,  RBW-> {2:8.2f} Hz,  nbits-> {3:3.2f}\n' \
         .format(nval, nval / fs, fs / nval, nbb_real)
-        bfdb, _, io_str = analyse_dump(b, nbb, config)
+        bfdb, _, _ = analyse_dump(b, nbb, config)
         plot_dump(b, nbb, bfdb, f_carriers[0], config, "Signal "+name_b+plot_str, plotfilename_b)
-        io_str = '\
-== Measurements on data stream ' + name_b + '\n\
-=============================================================================\n' + io_str
 
         print("Processing datastream of DDSxAMP signal truncated over 16 bits...")
         nbc_real=np.log10(c.max()-c.min())/np.log10(2)
         print("This signal uses {0:3.2f} bits".format(nbc_real))
         plot_str = ', Nb samples-> {0:8d},  Dump duration-> {1:6.2f} s,  RBW-> {2:8.2f} Hz,  nbits-> {3:3.2f}\n' \
         .format(nval, nval / fs, fs / nval, nbc_real)
-        cfdb, _, io_str = analyse_dump(c, nbc, config)
+        cfdb, _, _ = analyse_dump(c, nbc, config)
         plot_dump(c, nbc, cfdb, f_carriers[0], config, "Signal "+name_c+plot_str, plotfilename_c)
-        io_str = '\
-== Measurements on data stream ' + name_c + '\n\
-=============================================================================\n' + io_str
+
+        print("Processing datastream of ADDER INPUT signal...")
+        nbd_real=np.log10(d.max()-d.min())/np.log10(2)
+        print("This signal uses {0:3.2f} bits".format(nbd_real))
+        plot_str = ', Nb samples-> {0:8d},  Dump duration-> {1:6.2f} s,  RBW-> {2:8.2f} Hz,  nbits-> {3:3.2f}\n' \
+        .format(nval, nval / fs, fs / nval, nbd_real)
+        dfdb, _, _ = analyse_dump(d, nbd, config)
+        plot_dump(d, nbd, dfdb, f_carriers[0], config, "Signal "+name_d+plot_str, plotfilename_d)
+
+        print("Processing datastream of ADDER INPUT signal...")
+        nbe_real=np.log10(e.max()-e.min())/np.log10(2)
+        print("This signal uses {0:3.2f} bits".format(nbe_real))
+        plot_str = ', Nb samples-> {0:8d},  Dump duration-> {1:6.2f} s,  RBW-> {2:8.2f} Hz,  nbits-> {3:3.2f}\n' \
+        .format(nval, nval / fs, fs / nval, nbe_real)
+        efdb, _, _ = analyse_dump(e, nbe, config)
+        plot_dump(e, nbe, efdb, f_carriers[0], config, "Signal "+name_e+plot_str, plotfilename_e)
 
     print("Done!")
     print("------------------------------------")
