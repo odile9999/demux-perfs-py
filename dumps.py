@@ -128,7 +128,7 @@ def process_dump(fulldirname, config, max_duration=0.2):
         ###########################################################################
         print("Processing datastream of BIAS signal...")
         cfdb, f_carriers, io_str = analyse_dump(c, nbc, config)
-        plot_dump(c, nbc, cfdb, f_carriers[0], config, "Signal "+name_c+plot_str, plotfilename_c)
+        plot_dump(c, nbc, cfdb, f_carriers, config, "Signal "+name_c+plot_str, plotfilename_c)
         io_str = '\
     == Measurements on data stream ' + name_c + '\n\
     =============================================================================\n' + io_str
@@ -136,7 +136,7 @@ def process_dump(fulldirname, config, max_duration=0.2):
     
         print("Processing datastream of INPUT signal...")
         afdb, _, io_str = analyse_dump(a, nba, config)
-        plot_dump(a, nba, afdb, f_carriers[0], config, "Signal "+name_a+plot_str, plotfilename_a)
+        plot_dump(a, nba, afdb, f_carriers, config, "Signal "+name_a+plot_str, plotfilename_a)
         io_str = '\
     == Measurements on data stream ' + name_a + '\n\
     =============================================================================\n' + io_str
@@ -144,7 +144,7 @@ def process_dump(fulldirname, config, max_duration=0.2):
 
         print("Processing datastream of FEEDBACK signal...")
         bfdb, _, io_str = analyse_dump(b, nbb, config)
-        plot_dump(b, nbb, bfdb, f_carriers[0], config, "Signal "+name_b+plot_str, plotfilename_b)
+        plot_dump(b, nbb, bfdb, f_carriers, config, "Signal "+name_b+plot_str, plotfilename_b)
         io_str = '\
     == Measurements on data stream ' + name_b + '\n\
     =============================================================================\n' + io_str
@@ -271,8 +271,8 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
         sigfdb : array_like
         The data in frequency domain (expressed in dbFSR)
 
-        f_car : number
-        Frequency of the carrier we wabt to focus on.
+        f_car : array_like
+        Carrier frequencies.
 
         config : dictionnary
         Contains path and constants definitions
@@ -289,9 +289,11 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
 
     """
 
+    ncar=len(f_car)
+    pix_id = 0
     fs = config["fs"]
     f_res = (fs/2)/len(sigfdb) # frequency resolution
-    i_car = int(f_car / f_res) # position of the carrier in the frequency vector
+    i_car = int(f_car[pix_id] / f_res) # position of the 1st carrier in the frequency vector
 
     cf = crestfactor(sig-sig.mean())
     moyenne = sig.mean()
@@ -314,8 +316,8 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
     noise_req = -156
 
     # setting of the plot-ranges
-    fxmin = (f_car - config['ScBandMax']) / 1e6
-    fxmax = (f_car + config['ScBandMax']) / 1e6
+    fxmin = (f_car[pix_id] - config['ScBandMax']) / 1e6
+    fxmax = (f_car[pix_id] + config['ScBandMax']) / 1e6
     fxmin2 = 0.7
     fxmax2 = 5.2
     fymin = -180
@@ -368,8 +370,8 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
     ax4.axis([fxmin, fxmax, fymin, fymax])
 
     ax5 = fig.add_subplot(3, 1, 3)
-    npts = 50000
-    f_shift = np.linspace(0, fs/2, len(sigfdb)) - f_car # frequency vector shifted around f_car
+    npts = int(50e3 / f_res)   # covers half the carrier spacing
+    f_shift = np.linspace(0, fs/2, len(sigfdb)) - f_car[pix_id] # frequency vector shifted around 1st carrier
     delta = 0.1
     f_shift[i_car]+=delta # slight shift to allow xlog plot
     ax5.semilogx(f_shift[i_car:i_car+npts], sigfdb[i_car:i_car+npts], 'b', linewidth=1)
@@ -378,21 +380,31 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
     ax5.grid(color='k', linestyle=':', linewidth=0.5)
     ax5.set_xlim(delta, f_shift[i_car+npts])
     ax5.set_ylim(-200, 0)
-    ax5.text(delta*2, -10, 'Carrier frequency: {0:5.0f}MHz'.format(f_car))
+    ax5.text(delta*2, -10, 'Carrier frequency: {0:7.6f}MHz'.format(f_car[pix_id]/1e6))
 
     # Plotting spuriouses for the BIAS signal
+    spur_max_accu = 0
     if plotfilename[-8:-4]=="BIAS":
+        # mean behaviour for all the pixels
+        for f in f_car:
+            i_f = int(f / f_res)            
+            i_spurs_left = spurdetect(sigfdb[i_f-npts:i_f])
+            i_spurs_right = spurdetect(sigfdb[i_f:i_f+npts])
+            spur_max_accu += sigfdb[i_f]-np.concatenate((sigfdb[i_f-npts+i_spurs_left], sigfdb[i_f+i_spurs_right])).max()
+        spur_max_mean = spur_max_accu / ncar
+
+        # For a specific pixel
         i_spurs = spurdetect(sigfdb[i_car:i_car+npts])
         n_spurs = len(i_spurs)
-        spurs_mean = (sigfdb[i_car+i_spurs]-sigfdb[i_car]).mean()
+        #spurs_mean = (sigfdb[i_car+i_spurs]-sigfdb[i_car]).mean()
         i_spur_max = np.where(sigfdb[i_car+i_spurs] == sigfdb[i_car+i_spurs].max())
         f_spur_max = f_shift[i_car+i_spurs[i_spur_max]]
         spur_max = sigfdb[i_car+i_spurs[i_spur_max]]
         spur_max_text = '{0:5.1f}dBc'.format((spur_max-sigfdb[i_car])[0])
         general_spur_text = '{0:2d} spurious detected in the plot range,\n'.format(n_spurs) \
-            +'Stronger spurious measured at {0:5d}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                .format(int(f_spur_max[0]), (spur_max-sigfdb[i_car])[0]) \
-            +'Mean spurious value: {0:5.1f}dBc (mean of dB values)'.format(spurs_mean)            
+            +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                .format(f_spur_max[0], (spur_max-sigfdb[i_car])[0]) \
+            +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
         ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs],'o', color='orange')
         ax5.semilogx(f_spur_max, spur_max, '*', color='red')
         ax5.text(f_spur_max, spur_max+5, spur_max_text, horizontalalignment='center', color='red')
@@ -405,11 +417,29 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
 
 # -----------------------------------------------------------------------------
 def spurdetect(sig, margin=6):
+    r"""
+        This function detects spuriouses in a 1D signal. A threshold is used
+        to define the spurious level.
+        IMPORTANT: The spurious at the first and last index cannot be found.
+
+        Parameters
+        ----------
+        sig : array_like
+        The signal in which peaks will be detected
+
+        margin : number
+        The minimum spurious level. 
+        (default is 6).
+
+        Returns
+        -------
+        detected_spurious_indexes : array_like
+        Indexes of detected spurious according to the input array
+        """
 
     delta1 = sig - np.concatenate((sig[1:], [sig[-1]]))
     delta2 = sig - np.concatenate(([sig[0]], sig[:-1]))
     return(np.intersect1d(np.where(delta1 > margin)[0], np.where(delta2 > margin)[0]))
-
 
 # -----------------------------------------------------------------------------
 def peakdetect(sig, margin=6):
@@ -708,6 +738,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     npts = len(sptdb[0,:])
     ncar = len(sptdb[:,0])
     fs=float(config["fs"])/2**float(config["power_to_fs2"])
+    fres=(fs/2)/npts
     f=np.arange(npts)*fs/(2*npts)
     impact_2_dacs = 3    # Because the test set-up involves two DACs (bias and feedback)
     impact_non_stationarity = 20*np.log10(1.4) # Because our test set-up does not reproduce the TES non-stationarity 
@@ -718,12 +749,24 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     sc_band_max = config['ScBandMax'] 
     bw_res_warn = r'A BW res. correction factor of {0:4.2f}dB has been applied on the spectra. It shall be corrected for spurious measurements.'.format(bw_correction_factor_db)
 
+    # measurement of spurious for all pixels
+    spur_max_accu = 0
+    for car in range(ncar):
+        i_spurs = spurdetect(sptdb[car,:], 3)
+        if len(i_spurs >0):
+            spur_max_accu += sptdb[car, 0]-(sptdb[car, i_spurs]).max()
+    spur_max_mean = spur_max_accu / ncar
+    
     # Plot for zoom pixel only
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1)
     ax.semilogx(f[1:], sptdb[pix_zoom,1:])
-    i_spurs = spurdetect(sptdb[pix_zoom,:])
-    ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs],'o',color='orange')
+    i_spurs = spurdetect(sptdb[pix_zoom,:], 3)
+    n_spurs = len(i_spurs)
+    i_spur_max = np.where(sptdb[pix_zoom,:] == sptdb[pix_zoom,i_spurs].max())[0][0]
+    spur_max = sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max]
+    ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs],'.',color='orange')
+    ax.semilogx(f[i_spur_max], sptdb[pix_zoom,i_spur_max],'.',color='r')
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
@@ -738,6 +781,12 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax.set_xlabel(r'Frequency (Hz)')
     ax.set_ylabel(r'DRD (dBc.Hz)')
     ax.set_title(r'Pixel {0:2d}'.format(pix_zoom))
+    spur_text = '{0:3d} spurious detected in the plot range,\n'.format(n_spurs) \
+            +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                .format(i_spur_max*fres, spur_max) \
+            +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
+    ax.text(3, -60, spur_text)
+
     # Major ticks every 20, minor ticks every 10
     major_ticks = np.arange(-160, 1, 20)
     minor_ticks = np.arange(-160, 1, 10)

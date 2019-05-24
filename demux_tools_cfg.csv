@@ -4,7 +4,7 @@ dir_hk;HK
 dir_plots;PLOTS
 dir_logs;LOGS
 ScBandMin;10
-ScBandMax;560
+ScBandMax;15000
 SNR_pix;-125
 DRD;-160
 Cf;4,5
