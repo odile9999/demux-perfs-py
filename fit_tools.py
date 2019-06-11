@@ -86,9 +86,13 @@ def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
         plt.xlabel('Energy (eV)', **axis_font)
         plt.ylabel('Counts', **axis_font)
         plt.legend(loc='best', prop={'size':12})
+        nrj = coeff[1]
+        nrj_resol_at_7kev = nl_at_7kev*abs(coeff[2])*2.35482
         plt.title(r'{0:3d} counts, $\mu$ = {1:4.2f} eV and FWHM = {2:4.3f}x{3:4.2f} = {4:4.2f} eV'\
-                .format(np.sum(hist), coeff[1], nl_at_7kev, abs(coeff[2])*2.35482, nl_at_7kev*abs(coeff[2])*2.35482), **axis_font)
+                .format(np.sum(hist), nrj, nl_at_7kev, abs(coeff[2])*2.35482, nrj_resol_at_7kev, **axis_font))
         plt.savefig(pltfilename+'.png', bbox_inches='tight')
+    
+    return(nrj, nrj_resol_at_7kev)
 
 def low_pass(f, k, pi2rc):
     """

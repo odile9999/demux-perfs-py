@@ -38,7 +38,7 @@ def meas_energy_r(fulldirname, config, pix=40):
                     and os.path.getsize(os.path.join(datadirname, f))!=0 \
                     and f[-7:]=='.events']
 
-    if len(events_name)>0:
+    if len(events_name)>0: # There is an event file available for the processing
         time_stamps, _, pix_id, energy, baseline = get_data.read_events(os.path.join(datadirname, events_name[0]), backup_version)
         # keeping only pixels from the pixel we are interested in
         i_good = np.where(pix_id==pix)
@@ -48,7 +48,7 @@ def meas_energy_r(fulldirname, config, pix=40):
 
         time_sec = time_stamps / (config['fs']/2**config['power_to_fs2'])
         # Making the histogram plot
-        fit_tools.gauss_fit(energy,fit_tools.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None)
+        nrj, nrj_resol_at_7kev = fit_tools.gauss_fit(energy,fit_tools.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None)
 
         # Making the baseline plot
         ymax = np.max(baseline) + (np.max(baseline) - np.min(baseline))*0.2
@@ -68,8 +68,11 @@ def meas_energy_r(fulldirname, config, pix=40):
 
         fig.tight_layout()
         plt.savefig(pltfilename+'_BASELINE.png', bbox_inches='tight')
+    else: # There is no event file available for the processing
+        nrj, nrj_resol_at_7kev = -1, -1
    
-
+    return(nrj, nrj_resol_at_7kev)
+    
 #------------------------------------------------------------------------------
 def plot_gse_spectrum(fulldirname, config, e_min, e_max):
 
