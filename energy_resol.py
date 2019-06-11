@@ -38,8 +38,10 @@ def meas_energy_r(fulldirname, config, pix=40):
                     and os.path.getsize(os.path.join(datadirname, f))!=0 \
                     and f[-7:]=='.events']
 
-    if len(events_name)>0: # There is an event file available for the processing
-        time_stamps, _, pix_id, energy, baseline = get_data.read_events(os.path.join(datadirname, events_name[0]), backup_version)
+    tab_nrj = tab_nrj_resol_at_7kev = np.array([])
+    file_counter = 0
+    for file in events_name:
+        time_stamps, _, pix_id, energy, baseline = get_data.read_events(os.path.join(datadirname, file), backup_version)
         # keeping only pixels from the pixel we are interested in
         i_good = np.where(pix_id==pix)
         time_stamps=time_stamps[i_good[0]]
@@ -48,7 +50,10 @@ def meas_energy_r(fulldirname, config, pix=40):
 
         time_sec = time_stamps / (config['fs']/2**config['power_to_fs2'])
         # Making the histogram plot
-        nrj, nrj_resol_at_7kev = fit_tools.gauss_fit(energy,fit_tools.number_of_bins(energy),show=True, pltfilename=pltfilename, inf=None)
+        nrj, nrj_resol_at_7kev = fit_tools.gauss_fit(energy,fit_tools.number_of_bins(energy),show=True, \
+            pltfilename=pltfilename+'_'+str(file_counter), inf=None)
+        tab_nrj = np.append(tab_nrj, nrj)
+        tab_nrj_resol_at_7kev = np.append(tab_nrj_resol_at_7kev, nrj_resol_at_7kev)
 
         # Making the baseline plot
         ymax = np.max(baseline) + (np.max(baseline) - np.min(baseline))*0.2
@@ -67,12 +72,11 @@ def meas_energy_r(fulldirname, config, pix=40):
             item.set_fontsize(15)
 
         fig.tight_layout()
-        plt.savefig(pltfilename+'_BASELINE.png', bbox_inches='tight')
-    else: # There is no event file available for the processing
-        nrj, nrj_resol_at_7kev = -1, -1
+        plt.savefig(pltfilename+'_'+str(file_counter)+'_BASELINE.png', bbox_inches='tight')
+        file_counter+=1        
    
-    return(nrj, nrj_resol_at_7kev)
-    
+    return(tab_nrj, tab_nrj_resol_at_7kev)
+
 #------------------------------------------------------------------------------
 def plot_gse_spectrum(fulldirname, config, e_min, e_max):
 
