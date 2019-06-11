@@ -390,25 +390,27 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
             i_f = int(f / f_res)            
             i_spurs_left = spurdetect(sigfdb[i_f-npts:i_f])
             i_spurs_right = spurdetect(sigfdb[i_f:i_f+npts])
-            spur_max_accu += sigfdb[i_f]-np.concatenate((sigfdb[i_f-npts+i_spurs_left], sigfdb[i_f+i_spurs_right])).max()
+            if (len(i_spurs_left)+len(i_spurs_right))>0:
+                spur_max_accu += sigfdb[i_f]-np.concatenate((sigfdb[i_f-npts+i_spurs_left], sigfdb[i_f+i_spurs_right])).max()
         spur_max_mean = spur_max_accu / ncar
 
         # For a specific pixel
         i_spurs = spurdetect(sigfdb[i_car:i_car+npts])
         n_spurs = len(i_spurs)
         #spurs_mean = (sigfdb[i_car+i_spurs]-sigfdb[i_car]).mean()
-        i_spur_max = np.where(sigfdb[i_car+i_spurs] == sigfdb[i_car+i_spurs].max())
-        f_spur_max = f_shift[i_car+i_spurs[i_spur_max]]
-        spur_max = sigfdb[i_car+i_spurs[i_spur_max]]
-        spur_max_text = '{0:5.1f}dBc'.format((spur_max-sigfdb[i_car])[0])
-        general_spur_text = '{0:2d} spurious detected in the plot range,\n'.format(n_spurs) \
-            +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                .format(f_spur_max[0], (spur_max-sigfdb[i_car])[0]) \
-            +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
+        if n_spurs>0:
+            i_spur_max = np.where(sigfdb[i_car+i_spurs] == sigfdb[i_car+i_spurs].max())
+            f_spur_max = f_shift[i_car+i_spurs[i_spur_max]]
+            spur_max = sigfdb[i_car+i_spurs[i_spur_max]]
+            spur_max_text = '{0:5.1f}dBc'.format((spur_max-sigfdb[i_car])[0])
+            general_spur_text = '{0:2d} spurious detected in the plot range,\n'.format(n_spurs) \
+                +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                    .format(f_spur_max[0], (spur_max-sigfdb[i_car])[0]) \
+                +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
+            ax5.text(f_spur_max, spur_max+5, spur_max_text, horizontalalignment='center', color='red')
+            ax5.text(3, -75, general_spur_text)
+            ax5.semilogx(f_spur_max, spur_max, '*', color='red')
         ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs],'o', color='orange')
-        ax5.semilogx(f_spur_max, spur_max, '*', color='red')
-        ax5.text(f_spur_max, spur_max+5, spur_max_text, horizontalalignment='center', color='red')
-        ax5.text(3, -75, general_spur_text)
 
     fig.tight_layout()
     #plt.show()

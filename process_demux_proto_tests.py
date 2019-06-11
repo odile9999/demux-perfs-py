@@ -31,8 +31,8 @@ def process_demux_proto_tests(dirname):
 
     # -----------------------------------------------------------------------
     # Processing "Carriers spectra characterization"
-    pix=40 # test pixel index
-    dumps.process_iq_multi(fulldirname, config, pix_zoom=pix)
+    tst_pix=40 # test pixel index
+    dumps.process_iq_multi(fulldirname, config, pix_zoom=tst_pix)
     dumps.process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True)
 
     # -----------------------------------------------------------------------
