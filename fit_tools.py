@@ -68,7 +68,7 @@ def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
     
     #Plot the whole thing
     if show:
-        fig = plt.figure(figsize=(8, 7))
+        plt.figure(figsize=(8, 7))
         gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1]) 
 
         ax1 = plt.subplot(gs[0])
