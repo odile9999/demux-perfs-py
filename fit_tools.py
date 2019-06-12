@@ -47,6 +47,8 @@ def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
     from scipy.optimize import minimize
     import matplotlib.pyplot as plt
     import matplotlib as mpl
+    from matplotlib import gridspec
+
     nl_at_7kev = 1.361 # NL of LPA75um pixels at 7keV
     label_size = 12
     mpl.rcParams['xtick.labelsize'] = label_size    
@@ -66,32 +68,56 @@ def gauss_fit(array_to_fit, bins, show=True, pltfilename='ER', inf=None):
     
     #Plot the whole thing
     if show:
-        plt.figure(figsize=(8, 7))
+        fig = plt.figure(figsize=(8, 7))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1]) 
+
+        ax1 = plt.subplot(gs[0])
+        ax1.get_xaxis().get_major_formatter().set_useOffset(False)
+
         axe_fit = np.linspace(array_to_fit.min(),array_to_fit.max(),200)
-        ax = plt.gca()
-        ax.get_xaxis().get_major_formatter().set_useOffset(False)
+        hist_fit = gauss(axe_fit, *coeff)
+        ax1.plot(axe_fit,hist_fit,'r--',linewidth=2, label='Gaussian fit')
+        ax1.set_ylabel('Counts', **axis_font)
+        ax1.legend(loc='best', prop={'size':12})
+        nrj = coeff[1]
+        nrj_resol_at_7kev = nl_at_7kev*abs(coeff[2])*2.35482
+        ax1.set_title(r'{0:3d} counts, $\mu$ = {1:4.2f} eV and FWHM = {2:4.3f}x{3:4.2f} = {4:4.2f} eV'\
+                .format(np.sum(hist), nrj, nl_at_7kev, abs(coeff[2])*2.35482, nrj_resol_at_7kev, **axis_font))
+
+        ax2 = plt.subplot(gs[1], sharex = ax1)
+        bin_centers = bins[:-1] + 0.5*(bins[1]-bins[0])
+        error = hist-gauss(bin_centers, *coeff)
+        ax2.plot(bin_centers, error, '*')
+        #ax2.plot([7002.8, 7003.2], [0, 0], color='k', linewidth=0.5)
+
+        ax2.set_xlabel('Energy (eV)', **axis_font)
+        ax2.set_ylabel('Residual', **axis_font)
         if (inf is not None) and (np.array(inf).size!=0):
             par=inf[0]
             unit=inf[1]
-            plt.xlabel(par + '(' + unit + ')', **axis_font)
+            ax2.xlabel(par + '(' + unit + ')', **axis_font)
         else:
             par=None
             unit='eV'
-        for item in (ax.get_xticklabels()):
+        for item in (ax2.get_xticklabels()):
             item.set_rotation(45)
+        ymax = abs(error).max()*2
+        ymin = -1*ymax
+        ax2.set(ylim=(ymin, ymax))
 
-        hist_fit = gauss(axe_fit, *coeff)
-        plt.hist(array_to_fit, bins=bins, facecolor='lightgreen', alpha=0.9, label=par)
-        plt.plot(axe_fit,hist_fit,'r--',linewidth=2, label='Gaussian fit')
-        plt.xlabel('Energy (eV)', **axis_font)
-        plt.ylabel('Counts', **axis_font)
-        plt.legend(loc='best', prop={'size':12})
-        nrj = coeff[1]
-        nrj_resol_at_7kev = nl_at_7kev*abs(coeff[2])*2.35482
-        plt.title(r'{0:3d} counts, $\mu$ = {1:4.2f} eV and FWHM = {2:4.3f}x{3:4.2f} = {4:4.2f} eV'\
-                .format(np.sum(hist), nrj, nl_at_7kev, abs(coeff[2])*2.35482, nrj_resol_at_7kev, **axis_font))
+        # Remove xticklabels for ax1
+        plt.setp(ax1.get_xticklabels(), visible=False)
+        # remove last tick label for the second subplot
+        yticks = ax2.yaxis.get_major_ticks()
+        yticks[-1].label1.set_visible(False)
+        # Remove space between subplots
+        plt.subplots_adjust(hspace=.0)
+
+        ax1.hist(array_to_fit, bins=bins, facecolor='lightgreen', alpha=0.9, label=par)
+
+
         plt.savefig(pltfilename+'.png', bbox_inches='tight')
-    
+
     return(nrj, nrj_resol_at_7kev)
 
 def low_pass(f, k, pi2rc):
