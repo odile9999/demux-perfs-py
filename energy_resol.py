@@ -25,6 +25,7 @@ def meas_energy_r(fulldirname, config, pix=40):
     general_tools.checkdir(plotdirname)
 
     pltfilename = os.path.join(plotdirname, "PLOT_ENERGY-RESOL")
+    logfilename = os.path.join(plotdirname, "ENERGY-RESOL.log")
 
     # Reading data from files
     if backup_version < 1:
@@ -38,6 +39,7 @@ def meas_energy_r(fulldirname, config, pix=40):
                     and os.path.getsize(os.path.join(datadirname, f))!=0 \
                     and f[-7:]=='.events']
 
+    tab_nb_events = np.array([], dtype=int)
     tab_nrj = tab_nrj_resol_at_7kev = np.array([])
     file_counter = 0
     for file in events_name:
@@ -52,6 +54,7 @@ def meas_energy_r(fulldirname, config, pix=40):
         # Making the histogram plot
         nrj, nrj_resol_at_7kev = fit_tools.gauss_fit(energy,fit_tools.number_of_bins(energy),show=True, \
             pltfilename=pltfilename+'_'+str(file_counter), inf=None)
+        tab_nb_events = np.append(tab_nb_events, len(time_stamps))
         tab_nrj = np.append(tab_nrj, nrj)
         tab_nrj_resol_at_7kev = np.append(tab_nrj_resol_at_7kev, nrj_resol_at_7kev)
 
@@ -74,8 +77,25 @@ def meas_energy_r(fulldirname, config, pix=40):
         fig.tight_layout()
         plt.savefig(pltfilename+'_'+str(file_counter)+'_BASELINE.png', bbox_inches='tight')
         file_counter+=1        
-   
-    return(tab_nrj, tab_nrj_resol_at_7kev)
+
+    if file_counter>0:
+        flog = open(logfilename, 'w')
+        flog.write("/===============================================================|\n")
+        flog.write("Results of energy resolution measurements:\n")
+        flog.write("Number of event lists processed: {0:4d}\n".format(file_counter))
+        flog.write("Number of events:\n")
+        flog.write("   Minimum: {0:6d}\n".format(tab_nb_events.min()))
+        flog.write("   Maximum: {0:6d}\n".format(tab_nb_events.max()))
+        flog.write("   Mean:      {0:6.3f}\n".format(tab_nb_events.mean()))
+        flog.write("Mean of the mean energy:             {0:8.3f} eV\n".format(tab_nrj.mean()))
+        flog.write("Mean of the energy resolution:       {0:8.3f} eV\n".format(tab_nrj_resol_at_7kev.mean()))
+        if file_counter>1:
+            flog.write("Dispersion of the mean energy:       {0:8.3f} eV\n".format(tab_nrj.std()))
+            flog.write("Dispersion of the energy resolution: {0:8.3f} eV\n".format(tab_nrj_resol_at_7kev.std()))
+        flog.write("/===============================================================|\n")
+        flog.close()
+
+    return(tab_nb_events, tab_nrj, tab_nrj_resol_at_7kev)
 
 #------------------------------------------------------------------------------
 def plot_gse_spectrum(fulldirname, config, e_min, e_max):
