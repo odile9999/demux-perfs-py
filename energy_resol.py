@@ -33,7 +33,7 @@ def meas_energy_r(fulldirname, config, pix=40):
                     if os.path.isfile(os.path.join(datadirname, f)) \
                     and os.path.getsize(os.path.join(datadirname, f))!=0 \
                     and f[:6]=='events' and f[-4:]=='.dat']
-    else: 
+    else:
         events_name = [f for f in os.listdir(datadirname) \
                     if os.path.isfile(os.path.join(datadirname, f)) \
                     and os.path.getsize(os.path.join(datadirname, f))!=0 \
@@ -44,13 +44,25 @@ def meas_energy_r(fulldirname, config, pix=40):
     file_counter = 0
     for file in events_name:
         time_stamps, _, pix_id, energy, baseline = get_data.read_events(os.path.join(datadirname, file), backup_version)
+
         # keeping only pixels from the pixel we are interested in
         i_good = np.where(pix_id==pix)
         time_stamps=time_stamps[i_good[0]]
         energy=energy[i_good[0]]
         baseline=baseline[i_good[0]]
 
+        # Removing huge errors if any
+        i_bad = np.where(abs(energy-energy.mean()) > 10*energy.std())[0]
+        for i in i_bad:
+            print("WARNING !! removing energy at index {0:6d}. Probably a wrong measurment.".format(i))
+            energy=np.delete(energy, i)
+            time_stamps=np.delete(time_stamps, i)
+            baseline=np.delete(baseline, i)
+        if len(i_bad)>0:
+            pltfilename = pltfilename+"_ERROR_"
+
         time_sec = time_stamps / (config['fs']/2**config['power_to_fs2'])
+
         # Making the histogram plot
         nrj, nrj_resol_at_7kev = fit_tools.gauss_fit(energy,fit_tools.number_of_bins(energy),show=True, \
             pltfilename=pltfilename+'_'+str(file_counter), inf=None)
@@ -76,7 +88,7 @@ def meas_energy_r(fulldirname, config, pix=40):
 
         fig.tight_layout()
         plt.savefig(pltfilename+'_'+str(file_counter)+'_BASELINE.png', bbox_inches='tight')
-        file_counter+=1        
+        file_counter+=1
 
     if file_counter>0:
         flog = open(logfilename, 'w')
@@ -112,7 +124,7 @@ def plot_gse_spectrum(fulldirname, config, e_min, e_max):
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[:i_type_fin]=='Spectrum_']
     hysto_en, hysto_counts = get_data.read_spectrum(os.path.join(datadirname, spectrum_name[0]))
-    
+
     # Making the plot
     fig = plt.figure(figsize=(9, 5))
     max_counts = np.max(hysto_counts)*1.3
