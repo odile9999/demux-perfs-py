@@ -550,7 +550,7 @@ def noiseandspurpower(sigf, indexes, df, config):
     return(powers_db)
 
 # -----------------------------------------------------------------------
-def process_dump_pulses(fulldirname, config):
+def process_dump_pulses_adc(fulldirname, config):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
         INPUT signal while pulses.
@@ -600,7 +600,7 @@ def process_dump_pulses(fulldirname, config):
 
         pulse_length = 1024*128
         center = a[pulse_length:-pulse_length] # Only consider the center of the dumb to have a full pulse
-        imax = np.where(center==np.max(center))[0][0]+pulse_length
+        imax = np.where(center==center.max())[0][0]+pulse_length
         ideb = imax - 128*100
         ifin = imax + pulse_length
         i3 = ifin - 128*30
@@ -666,6 +666,88 @@ def process_dump_pulses(fulldirname, config):
         #plt.show()
         plt.savefig(plotfilename, bbox_inches='tight')
 
+
+# -----------------------------------------------------------------------
+def process_dump_pulses_iq(fulldirname, config):
+    r"""
+        This function reads and process the data of DRE-DEMUX data dumps.
+        IQ signal while pulses.
+        
+        Parameters
+        ----------
+        fulldirname : string
+        The name of the dump file (with the path)
+
+        config : dictionnary
+        Contains path and constants definitions
+
+        Returns
+        -------
+        Nothing
+
+        """
+
+    datadirname = os.path.join(fulldirname, config['dir_data'])
+    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    general_tools.checkdir(plotdirname)
+
+    fs = config["fs"]/2**config["power_to_fs2"]
+
+    f_type_deb, f_type_fin = 21, 33
+    dumpfilenames = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[-4:]=='.dat'\
+                and f[f_type_deb:f_type_fin]=="IQ-ALL_PULSE"]
+
+    if len(dumpfilenames)>0:
+        dumpfilename = os.path.join(datadirname, dumpfilenames[0])
+        plotfilename = os.path.join(plotdirname, "PLOT_MODULE_WITH_PULSES.png")
+
+        # Getting the data from dump file
+        chi, chq, _, _, flag_error = get_data.read_iq(dumpfilename)
+
+        modulus = np.sqrt(chi.astype('float')**2 + chq.astype('float')**2)
+        npts = len(modulus)
+
+        t = np.arange(npts)/fs
+
+        pulse_length = 1024
+        pix = 40 # test pixel
+        modulus = modulus[pulse_length:-pulse_length] # Only consider the center of the dumb to have a full pulse
+        imax = np.where(modulus[:,pix]==modulus[:,pix].min())[0][0]
+        ideb = imax - int(pulse_length/4)
+        ifin = imax + pulse_length
+
+        # Making plots
+        fig = plt.figure(figsize=(8, 8))
+        io_str="File: "+dumpfilenames[0]
+        fig.text(0.1, 0.982, io_str, family='monospace')
+
+        ax1 = fig.add_subplot(2, 1, 1)
+        ax1.plot(t[ideb:ifin]*1e3, modulus[ideb:ifin, :])
+        ax1.set_ylim(0, 2**(16-1))
+        ax1.set_title("All pixels")
+        ax1.set_ylabel("Module")
+        ax1.set_xlabel("Time (ms)")
+
+        ax2 = fig.add_subplot(2, 1, 2)
+        slice = modulus[ideb:ifin, pix]
+        ax2.plot(t[ideb:ifin]*1e3, slice)
+        ax2.set_ylim(0, 2**(16-1))
+        ax2.set_title("Test pixel")
+        ax2.set_ylabel("Module")
+        ax2.set_xlabel("Time (ms)")
+        print(slice.max())
+        print(slice.min())
+        print(slice.min()/slice.max())
+        message = "Modulation ratio = {0:5.2f}%".format(100*(1-slice.min()/slice.max()))
+        ax2.text(t[ideb]*1e3, 30000, message)
+
+        fig.tight_layout()
+        #plt.show()
+        plt.savefig(plotfilename, bbox_inches='tight')
+
+# -----------------------------------------------------------------------
 def mosaic_labels(ax, box, n_cols, n_lines, x_lab, y_lab):
     r"""
         This function defines the xlabel and ylabel for a plot in a plot mosaic.

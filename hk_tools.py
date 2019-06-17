@@ -68,7 +68,7 @@ def get_hk(fulldirname, config):
                             hk[keys[i]] = np.append(hk[keys[i]], row[i])
                         else:
                             hk[keys[i]] = np.append(hk[keys[i]], float(row[i].replace(',','.')))
-    
+
     hk_lims = get_hk_lims(fulldirname, config, hk)
     return(hk, hk_lims)
 
@@ -91,7 +91,7 @@ def print_hk(hk):
     print('The hk values are the following:')
     for key in hk.keys():
         print(key, ': ', hk[key])
-    
+
     return()
 
 # -----------------------------------------------------------------------
@@ -114,13 +114,13 @@ def count_valid_hk(hk):
     n_valid_hk = 0
     for key in hk.keys():
         if key[0:8]!='DRE_Hks_' and key[1:9]!='DRE_Hks_' and key!='Date':
-            n_valid_hk = n_valid_hk+1 
+            n_valid_hk = n_valid_hk+1
 
     return(n_valid_hk)
 
 # -----------------------------------------------------------------------
 
-def plot_hk(hk, hk_lims, fulldirname, config):
+def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=true):
     r"""
         This function plots the hk of the DRE-DEMUX prototype.
 
@@ -130,7 +130,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
         hk values.
 
         hk_lims: Dictionnary
-        hk limits. 
+        hk limits.
 
         fulldirname: string
         The name of the dump file (with the path)
@@ -190,6 +190,7 @@ def plot_hk(hk, hk_lims, fulldirname, config):
     fig = plt.figure(figsize=(12, 18))
     ihk=1
     for key in hk.keys():
+        #print(key)
         if key !='Date' and ihk <= n_valid_hk:
             ax = fig.add_subplot(n_lines, n_cols, ihk)
             ax.plot(deltatime, hk[key], linewidth=3)
@@ -206,6 +207,27 @@ def plot_hk(hk, hk_lims, fulldirname, config):
             ihk=ihk+1
     fig.tight_layout()
     plt.savefig(pltfilename1, bbox_inches='tight')
+    
+    if plt_temp:
+        fig = plt.figure(figsize=(9, 5))
+        key="\"Temperature DAC CH1 (C)\""
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(deltatime, hk[key], linewidth=3)
+        ax.grid(color='k', linestyle=':', linewidth=0.5)
+        ax.set_ylabel(key[1:-1])
+        ax.set_xlabel('time (s)')
+        mini=hk[key].min()
+        maxi=hk[key].max()
+        margin = 0.2*(maxi-mini)
+        if margin == 0:
+            margin = 0.05
+        ax.set_ylim(mini-margin, maxi+margin)
+        ax.grid(color='k', linestyle=':', linewidth=0.5)
+        for item in (ax.yaxis.label, ax.xaxis.label):
+            item.set_weight('bold')
+            item.set_fontsize(15)
+        fig.tight_layout()
+        plt.savefig("TEMP_DAC.png", bbox_inches='tight')
 
     return()
 # -----------------------------------------------------------------------
@@ -219,7 +241,7 @@ def datetxt_to_date(datetxt):
                         int(datetxt[6:8]),   \
                         int(datetxt[9:11]),  \
                         int(datetxt[11:13]), \
-                        int(datetxt[13:15])) 
+                        int(datetxt[13:15]))
     return(date_test)
 
 # -----------------------------------------------------------------------
@@ -278,10 +300,10 @@ def get_hk_lims(fulldirname, config, hk):
         Returns
         -------
         hk_lims: Dictionnary
-        hk limits. 
+        hk limits.
 
         """
-         
+
     hk_lims_list = init_hk_lims(hk)    # Set hk limits to default values
 
     filename = 'parametersTF.dispatcher'
@@ -322,12 +344,12 @@ def print_hk_lims(hk_lims_list):
         Parameters
         ----------
         hk_lims: Dictionnary
-        hk limits. 
+        hk limits.
 
         Returns
         -------
         Nothing.
-        
+
         """
 
     for key1 in hk_lims_list.keys():
