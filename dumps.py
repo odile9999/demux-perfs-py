@@ -550,7 +550,7 @@ def noiseandspurpower(sigf, indexes, df, config):
     return(powers_db)
 
 # -----------------------------------------------------------------------
-def process_dump_pulses_adc(fulldirname, config):
+def process_dump_pulses_adc_bias(fulldirname, config):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
         INPUT signal while pulses.
@@ -574,7 +574,7 @@ def process_dump_pulses_adc(fulldirname, config):
     general_tools.checkdir(plotdirname)
 
     fs = config["fs"]
-    nb = 12 # INPUT signal over 12 bits
+    nba, nbb = 12, 16 # INPUT and BIAS signals over 12 and 16 bits respectively
 
     f_type_deb, f_type_fin = 21, 33
     dumpfilenames = [f for f in os.listdir(datadirname) \
@@ -584,14 +584,18 @@ def process_dump_pulses_adc(fulldirname, config):
 
     if len(dumpfilenames)>0:
         dumpfilename = os.path.join(datadirname, dumpfilenames[0])
-        plotfilename = os.path.join(plotdirname, "PLOT_INPUT_WITH_PULSES.png")
+        plotfilenamea = os.path.join(plotdirname, "PLOT_INPUT_WITH_PULSES.png")
+        plotfilenameb = os.path.join(plotdirname, "PLOT_BIAS_WITH_PULSES.png")
 
         # Getting the data from dump file
         data, _ = get_data.readfile(dumpfilename)
 
         channel=int(data[0, 1]/2**12)
         a=data[1:,0]
-        pp=a.max()-a.min()
+        b=data[1:,1]
+
+        ppa=a.max()-a.min()
+        ppb=b.max()-b.min()
     
         nval=len(a)
         duration = (nval/fs)
@@ -603,13 +607,15 @@ def process_dump_pulses_adc(fulldirname, config):
         imax = np.where(center==center.max())[0][0]+pulse_length
         ideb = imax - 128*100
         ifin = imax + pulse_length
+        ideb_zoom = imax - 128*10
+        ifin_zoom = imax + int(pulse_length / 20)
         i3 = ifin - 128*30
         i2 = ifin - 128*100
         i1 = ifin - 128*170
 
-        # Making plot
+        # Making plot of input signal
         fig = plt.figure(figsize=(8, 6))
-        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PeakPeak = {1:5.2f}".format(channel, 2.**12/pp)
+        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PeakPeak = {1:5.2f}".format(channel, 2.**nba/ppa)
         fig.text(0.1, 0.982, io_str, family='monospace')
 
         #---------------------------
@@ -619,7 +625,7 @@ def process_dump_pulses_adc(fulldirname, config):
         # - The "SQUID flux" versus "ADC input level" is a non linear function for high signals (sine function)
         # - ADC level for 12keV = FSR * sin(pi/2 * 0.3/0.5) / sin(pi/2)
         # - ADC level for 7keV = FSR * sin(pi/2 * 0.3*(7/12)/0.5) / sin(pi/2)
-        fsr_peak = 2**(nb-1) # FSR peak
+        fsr_peak = 2**(nba-1) # FSR peak
         fsr_flux = 0.5
         twelve_kev_flux = 0.3
         seven_kev_flux = 0.3*7./12.
@@ -660,12 +666,31 @@ def process_dump_pulses_adc(fulldirname, config):
 
         ax.set_ylabel("ADC unit (FSR range)")
         ax.set_xlabel("Time (ms)")
-        ax.set_ylim([-2**(nb-1), 2**(nb-1)])
+        ax.set_ylim([-2**(nba-1), 2**(nba-1)])
 
         fig.tight_layout()
-        #plt.show()
-        plt.savefig(plotfilename, bbox_inches='tight')
+        plt.savefig(plotfilenamea, bbox_inches='tight')
 
+
+        # Making plot of bias signal
+        fig = plt.figure(figsize=(8, 10))
+        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(DAC)/PeakPeak = {1:5.2f}".format(channel, 2.**nbb/ppb)
+        fig.text(0.1, 0.987, io_str, family='monospace')
+
+        ax = fig.add_subplot(2, 1, 1)
+        ax.plot(t[ideb:ifin]*1e3, b[ideb:ifin])
+        ax.set_ylabel("DAC unit (FSR range)")
+        ax.set_xlabel("Time (ms)")
+        ax.set_ylim([-2**(nbb-1), 2**(nbb-1)])
+
+        ax2 = fig.add_subplot(2, 1, 2)
+        ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, b[ideb_zoom:ifin_zoom])
+        ax2.set_ylabel("DAC unit (FSR range)")
+        ax2.set_xlabel("Time (ms)")
+        ax2.set_ylim([1.1*b.min(), 1.1*b.max()])
+
+        fig.tight_layout()
+        plt.savefig(plotfilenameb, bbox_inches='tight')
 
 # -----------------------------------------------------------------------
 def process_dump_pulses_iq(fulldirname, config):
