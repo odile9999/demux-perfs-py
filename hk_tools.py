@@ -120,7 +120,7 @@ def count_valid_hk(hk):
 
 # -----------------------------------------------------------------------
 
-def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=true):
+def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True):
     r"""
         This function plots the hk of the DRE-DEMUX prototype.
 

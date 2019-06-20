@@ -8,6 +8,9 @@ import baseline
 import os
 
 # ---------------------------------------------------------------------------
+export_events_npy = False # if True the event list is exported as a npy file
+
+# ---------------------------------------------------------------------------
 def process_demux_proto_tests(dirname):
     config = general_tools.get_conf()
 
@@ -17,7 +20,7 @@ def process_demux_proto_tests(dirname):
     # Processing of hk files 
     hk, hk_lims = hk_tools.get_hk(fulldirname, config)
     if hk != 0:
-        hk_tools.plot_hk(hk, hk_lims, fulldirname, config)
+        hk_tools.plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True)
  
     # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
@@ -43,6 +46,10 @@ def process_demux_proto_tests(dirname):
     # Processing "Energy resolution characterization"
     dumps.process_dump_pulses_adc(fulldirname, config)
     dumps.process_dump_pulses_iq(fulldirname, config)
-    _, _, _ = energy_resol.meas_energy_r(fulldirname, config)
+    _, _, _ = energy_resol.meas_energy_r(fulldirname, config, pix=40, export_npy_files=export_events_npy)
+
+    if export_events_npy:
+        energy_resol.make_npy(fulldirname, config, pix=40)
+        energy_resol.check_npy_files(fulldirname, config)
 
 # ---------------------------------------------------------------------------
