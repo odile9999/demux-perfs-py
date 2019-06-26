@@ -107,7 +107,6 @@ def read_iq(filename):
         if FLAG_ERROR is True the file format is incorrect.
                     
         """
-
     data, dumptype = readfile(filename)
     if dumptype != 8:
         raise ValueError('Wrong dumptype')

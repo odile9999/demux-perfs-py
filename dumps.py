@@ -21,7 +21,7 @@ def analyse_dump(sig, nb, config):
 def process_dump(fulldirname, config, max_duration=0.2):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
-        
+
         Parameters
         ----------
         fulldirname : string
@@ -550,10 +550,10 @@ def noiseandspurpower(sigf, indexes, df, config):
     return(powers_db)
 
 # -----------------------------------------------------------------------
-def process_dump_pulses_adc_bias(fulldirname, config):
+def process_dump_pulses_adc_dac(fulldirname, config, dump_type, zoom_factor=20):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
-        INPUT signal while pulses.
+        INPUT and BIAS or FEEDBACK signals while pulses.
         
         Parameters
         ----------
@@ -562,6 +562,12 @@ def process_dump_pulses_adc_bias(fulldirname, config):
 
         config : dictionnary
         Contains path and constants definitions
+
+        dump_type : string
+        Type of data : "IN-BIA_PULSE" or "IN-FBK_PULSE"
+
+        zoom_factor : int
+        Fraction of pulse length to be shown (default = 20  i.e. 1/20 of the pulse lendth)
 
         Returns
         -------
@@ -574,18 +580,16 @@ def process_dump_pulses_adc_bias(fulldirname, config):
     general_tools.checkdir(plotdirname)
 
     fs = config["fs"]
-    nba, nbb = 12, 16 # INPUT and BIAS signals over 12 and 16 bits respectively
+    nba, nbb = 12, 16 # INPUT and BIAS (or FEEDBACK) signals over 12 and 16 bits respectively
 
-    f_type_deb, f_type_fin = 21, 33
     dumpfilenames = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[-4:]=='.dat'\
-                and f[f_type_deb:f_type_fin]=="IN-BIA_PULSE"]
+                and f[-16:]==dump_type+'.dat']
 
     if len(dumpfilenames)>0:
         dumpfilename = os.path.join(datadirname, dumpfilenames[0])
         plotfilenamea = os.path.join(plotdirname, "PLOT_INPUT_WITH_PULSES.png")
-        plotfilenameb = os.path.join(plotdirname, "PLOT_BIAS_WITH_PULSES.png")
+        plotfilenameb = os.path.join(plotdirname, "PLOT_"+dump_type[3:6]+"_WITH_PULSES.png")
 
         # Getting the data from dump file
         data, _ = get_data.readfile(dumpfilename)
@@ -608,14 +612,14 @@ def process_dump_pulses_adc_bias(fulldirname, config):
         ideb = imax - 128*100
         ifin = imax + pulse_length
         ideb_zoom = imax - 128*10
-        ifin_zoom = imax + int(pulse_length / 20)
+        ifin_zoom = imax + int(pulse_length / zoom_factor)
         i3 = ifin - 128*30
         i2 = ifin - 128*100
         i1 = ifin - 128*170
 
         # Making plot of input signal
-        fig = plt.figure(figsize=(8, 6))
-        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PeakPeak = {1:5.2f}".format(channel, 2.**nba/ppa)
+        fig = plt.figure(figsize=(8, 10))
+        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PP(Input) = {1:5.2f}".format(channel, 2.**nba/ppa)
         fig.text(0.1, 0.982, io_str, family='monospace')
 
         #---------------------------
@@ -634,7 +638,7 @@ def process_dump_pulses_adc_bias(fulldirname, config):
         deltatext = 128*30
         ytext = -0.1 * fsr_peak
 
-        ax = fig.add_subplot(1, 1, 1)
+        ax = fig.add_subplot(2, 1, 1)
         ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
         ax.plot([t[ideb]*1e3,t[ifin]*1e3], [twelve_kev_peak, twelve_kev_peak], '--g', linewidth=0.5)
         ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-twelve_kev_peak, -twelve_kev_peak], '--g', linewidth=0.5)
@@ -668,13 +672,19 @@ def process_dump_pulses_adc_bias(fulldirname, config):
         ax.set_xlabel("Time (ms)")
         ax.set_ylim([-2**(nba-1), 2**(nba-1)])
 
+        ax2 = fig.add_subplot(2, 1, 2)
+        ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, a[ideb_zoom:ifin_zoom])
+        ax2.set_ylabel("ADC unit (FSR range)")
+        ax2.set_xlabel("Time (ms)")
+        ax2.set_ylim([1.1*a.min(), 1.1*a.max()])
+
         fig.tight_layout()
         plt.savefig(plotfilenamea, bbox_inches='tight')
 
 
-        # Making plot of bias signal
+        # Making plot of bias or feedback signal
         fig = plt.figure(figsize=(8, 10))
-        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(DAC)/PeakPeak = {1:5.2f}".format(channel, 2.**nbb/ppb)
+        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, $FSR(DAC)/PP(".format(channel)+dump_type[3:6]+")$ = {0:5.2f}".format(2.**nbb/ppb)
         fig.text(0.1, 0.987, io_str, family='monospace')
 
         ax = fig.add_subplot(2, 1, 1)
@@ -762,9 +772,6 @@ def process_dump_pulses_iq(fulldirname, config):
         ax2.set_title("Test pixel")
         ax2.set_ylabel("Module")
         ax2.set_xlabel("Time (ms)")
-        print(slice.max())
-        print(slice.min())
-        print(slice.min()/slice.max())
         message = "Modulation ratio = {0:5.2f}%".format(100*(1-slice.min()/slice.max()))
         ax2.text(t[ideb]*1e3, 30000, message)
 
