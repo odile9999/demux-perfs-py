@@ -9,6 +9,7 @@ import get_data, general_tools
 def analyse_dump(sig, nb, config):
 
     print("------------------------------------")
+    sigfdb = np.array([])  
     f_carriers = np.array([])  
     io_str=""
     if abs(sig).max()==0:
@@ -128,27 +129,36 @@ def process_dump(fulldirname, config, max_duration=0.2):
         ###########################################################################
         print("Processing datastream of BIAS signal...")
         cfdb, f_carriers, io_str = analyse_dump(c, nbc, config)
-        plot_dump(c, nbc, cfdb, f_carriers, config, "Signal "+name_c+plot_str, plotfilename_c)
-        io_str = '\
+        if (len(cfdb)>0):
+            plot_dump(c, nbc, cfdb, f_carriers, config, "Signal "+name_c+plot_str, plotfilename_c)
+            io_str = '\
     == Measurements on data stream ' + name_c + '\n\
     =============================================================================\n' + io_str
-        flog.write(io_str)
+            flog.write(io_str)
+        else:
+            flog.write("Bias signal data stream is empty")
     
         print("Processing datastream of INPUT signal...")
         afdb, _, io_str = analyse_dump(a, nba, config)
-        plot_dump(a, nba, afdb, f_carriers, config, "Signal "+name_a+plot_str, plotfilename_a)
-        io_str = '\
+        if (len(afdb)>0):
+            plot_dump(a, nba, afdb, f_carriers, config, "Signal "+name_a+plot_str, plotfilename_a)
+            io_str = '\
     == Measurements on data stream ' + name_a + '\n\
     =============================================================================\n' + io_str
-        flog.write(io_str)
-
+            flog.write(io_str)
+        else:
+            flog.write("Input signal data stream is empty")
+            
         print("Processing datastream of FEEDBACK signal...")
         bfdb, _, io_str = analyse_dump(b, nbb, config)
-        plot_dump(b, nbb, bfdb, f_carriers, config, "Signal "+name_b+plot_str, plotfilename_b)
-        io_str = '\
+        if (len(bfdb)>0):
+            plot_dump(b, nbb, bfdb, f_carriers, config, "Signal "+name_b+plot_str, plotfilename_b)
+            io_str = '\
     == Measurements on data stream ' + name_b + '\n\
     =============================================================================\n' + io_str
-        flog.write(io_str)
+            flog.write(io_str)
+        else:
+            flog.write("Feedback signal data stream is empty")
 
         flog.close()
 
@@ -618,89 +628,91 @@ def process_dump_pulses_adc_dac(fulldirname, config, dump_type, zoom_factor=20):
         i1 = ifin - 128*170
 
         # Making plot of input signal
-        fig = plt.figure(figsize=(8, 10))
-        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PP(Input) = {1:5.2f}".format(channel, 2.**nba/ppa)
-        fig.text(0.1, 0.982, io_str, family='monospace')
+        if (ppa>0): # Data stream is not empty
+            fig = plt.figure(figsize=(8, 10))
+            io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PP(Input) = {1:5.2f}".format(channel, 2.**nba/ppa)
+            fig.text(0.1, 0.982, io_str, family='monospace')
 
-        #---------------------------
-        # Assumptions:
-        # - The FSR of the ADC corresponds to the FSR output of the SQUID (i.e. 0.5Phi0pp)
-        # - 12keV corresponds to 0.3Phi0 at SQUID input
-        # - The "SQUID flux" versus "ADC input level" is a non linear function for high signals (sine function)
-        # - ADC level for 12keV = FSR * sin(pi/2 * 0.3/0.5) / sin(pi/2)
-        # - ADC level for 7keV = FSR * sin(pi/2 * 0.3*(7/12)/0.5) / sin(pi/2)
-        fsr_peak = 2**(nba-1) # FSR peak
-        fsr_flux = 0.5
-        twelve_kev_flux = 0.3
-        seven_kev_flux = 0.3*7./12.
-        twelve_kev_peak = fsr_peak * np.sin((np.pi/2)*twelve_kev_flux/fsr_flux) / np.sin(np.pi/2)
-        seven_kev_peak = fsr_peak * np.sin((np.pi/2)*seven_kev_flux/fsr_flux) / np.sin(np.pi/2)
-        deltatext = 128*30
-        ytext = -0.1 * fsr_peak
+            #---------------------------
+            # Assumptions:
+            # - The FSR of the ADC corresponds to the FSR output of the SQUID (i.e. 0.5Phi0pp)
+            # - 12keV corresponds to 0.3Phi0 at SQUID input
+            # - The "SQUID flux" versus "ADC input level" is a non linear function for high signals (sine function)
+            # - ADC level for 12keV = FSR * sin(pi/2 * 0.3/0.5) / sin(pi/2)
+            # - ADC level for 7keV = FSR * sin(pi/2 * 0.3*(7/12)/0.5) / sin(pi/2)
+            fsr_peak = 2**(nba-1) # FSR peak
+            fsr_flux = 0.5
+            twelve_kev_flux = 0.3
+            seven_kev_flux = 0.3*7./12.
+            twelve_kev_peak = fsr_peak * np.sin((np.pi/2)*twelve_kev_flux/fsr_flux) / np.sin(np.pi/2)
+            seven_kev_peak = fsr_peak * np.sin((np.pi/2)*seven_kev_flux/fsr_flux) / np.sin(np.pi/2)
+            deltatext = 128*30
+            ytext = -0.1 * fsr_peak
 
-        ax = fig.add_subplot(2, 1, 1)
-        ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
-        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [twelve_kev_peak, twelve_kev_peak], '--g', linewidth=0.5)
-        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-twelve_kev_peak, -twelve_kev_peak], '--g', linewidth=0.5)
-        plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
-            xy=(t[i1]*1e3, fsr_peak), textcoords='data',
-            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
-        plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
-            xy=(t[i1]*1e3, -fsr_peak), textcoords='data',
-            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-        plt.text(t[i1-deltatext]*1e3, ytext, r'0.50 $\phi_0$', rotation=90)
+            ax = fig.add_subplot(2, 1, 1)
+            ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
+            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [twelve_kev_peak, twelve_kev_peak], '--g', linewidth=0.5)
+            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-twelve_kev_peak, -twelve_kev_peak], '--g', linewidth=0.5)
+            plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
+                xy=(t[i1]*1e3, fsr_peak), textcoords='data',
+                arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+            plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
+                xy=(t[i1]*1e3, -fsr_peak), textcoords='data',
+                arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+            plt.text(t[i1-deltatext]*1e3, ytext, r'0.50 $\phi_0$', rotation=90)
 
-        plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
-            xy=(t[i2]*1e3, twelve_kev_peak), textcoords='data',
-            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
-        plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
-            xy=(t[i2]*1e3, -twelve_kev_peak), textcoords='data',
-            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-        plt.text(t[i2-deltatext]*1e3, ytext, r'0.30 $\phi_0$ (12 keV)', rotation=90)
+            plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
+                xy=(t[i2]*1e3, twelve_kev_peak), textcoords='data',
+                arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+            plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
+                xy=(t[i2]*1e3, -twelve_kev_peak), textcoords='data',
+                arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+            plt.text(t[i2-deltatext]*1e3, ytext, r'0.30 $\phi_0$ (12 keV)', rotation=90)
 
-        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [seven_kev_peak, seven_kev_peak], '--g', linewidth=0.5)
-        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-1*seven_kev_peak, -1*seven_kev_peak], '--g', linewidth=0.5)
-        plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
-            xy=(t[i3]*1e3, seven_kev_peak), textcoords='data',
-            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
-        plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
-            xy=(t[i3]*1e3, -seven_kev_peak), textcoords='data',
-            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-        plt.text(t[i3-deltatext]*1e3, ytext, r'{0:3.2f} $\phi_0$ (7 keV)'.format(seven_kev_flux), rotation=90)
+            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [seven_kev_peak, seven_kev_peak], '--g', linewidth=0.5)
+            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-1*seven_kev_peak, -1*seven_kev_peak], '--g', linewidth=0.5)
+            plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
+                xy=(t[i3]*1e3, seven_kev_peak), textcoords='data',
+                arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+            plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
+                xy=(t[i3]*1e3, -seven_kev_peak), textcoords='data',
+                arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+            plt.text(t[i3-deltatext]*1e3, ytext, r'{0:3.2f} $\phi_0$ (7 keV)'.format(seven_kev_flux), rotation=90)
 
-        ax.set_ylabel("ADC unit (FSR range)")
-        ax.set_xlabel("Time (ms)")
-        ax.set_ylim([-2**(nba-1), 2**(nba-1)])
+            ax.set_ylabel("ADC unit (FSR range)")
+            ax.set_xlabel("Time (ms)")
+            ax.set_ylim([-2**(nba-1), 2**(nba-1)])
 
-        ax2 = fig.add_subplot(2, 1, 2)
-        ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, a[ideb_zoom:ifin_zoom])
-        ax2.set_ylabel("ADC unit (FSR range)")
-        ax2.set_xlabel("Time (ms)")
-        ax2.set_ylim([1.1*a.min(), 1.1*a.max()])
+            ax2 = fig.add_subplot(2, 1, 2)
+            ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, a[ideb_zoom:ifin_zoom])
+            ax2.set_ylabel("ADC unit (FSR range)")
+            ax2.set_xlabel("Time (ms)")
+            ax2.set_ylim([1.1*a.min(), 1.1*a.max()])
 
-        fig.tight_layout()
-        plt.savefig(plotfilenamea, bbox_inches='tight')
+            fig.tight_layout()
+            plt.savefig(plotfilenamea, bbox_inches='tight')
 
 
         # Making plot of bias or feedback signal
-        fig = plt.figure(figsize=(8, 10))
-        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, $FSR(DAC)/PP(".format(channel)+dump_type[3:6]+")$ = {0:5.2f}".format(2.**nbb/ppb)
-        fig.text(0.1, 0.987, io_str, family='monospace')
+        if (ppb>0): # Data stream is not empty
+            fig = plt.figure(figsize=(8, 10))
+            io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, $FSR(DAC)/PP(".format(channel)+dump_type[3:6]+")$ = {0:5.2f}".format(2.**nbb/ppb)
+            fig.text(0.1, 0.987, io_str, family='monospace')
 
-        ax = fig.add_subplot(2, 1, 1)
-        ax.plot(t[ideb:ifin]*1e3, b[ideb:ifin])
-        ax.set_ylabel("DAC unit (FSR range)")
-        ax.set_xlabel("Time (ms)")
-        ax.set_ylim([-2**(nbb-1), 2**(nbb-1)])
+            ax = fig.add_subplot(2, 1, 1)
+            ax.plot(t[ideb:ifin]*1e3, b[ideb:ifin])
+            ax.set_ylabel("DAC unit (FSR range)")
+            ax.set_xlabel("Time (ms)")
+            ax.set_ylim([-2**(nbb-1), 2**(nbb-1)])
 
-        ax2 = fig.add_subplot(2, 1, 2)
-        ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, b[ideb_zoom:ifin_zoom])
-        ax2.set_ylabel("DAC unit (FSR range)")
-        ax2.set_xlabel("Time (ms)")
-        ax2.set_ylim([1.1*b.min(), 1.1*b.max()])
+            ax2 = fig.add_subplot(2, 1, 2)
+            ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, b[ideb_zoom:ifin_zoom])
+            ax2.set_ylabel("DAC unit (FSR range)")
+            ax2.set_xlabel("Time (ms)")
+            ax2.set_ylim([1.1*b.min(), 1.1*b.max()])
 
-        fig.tight_layout()
-        plt.savefig(plotfilenameb, bbox_inches='tight')
+            fig.tight_layout()
+            plt.savefig(plotfilenameb, bbox_inches='tight')
 
 # -----------------------------------------------------------------------
 def process_dump_pulses_iq(fulldirname, config):
@@ -890,7 +902,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax.text(40, -17, r'band of interest', fontsize=11)
     ax.text(sc_band_min, snr_pix_min-5, r'DRD requirement level', fontsize=11)
     ax.text(1.5, -159, bw_res_warn, fontsize=11)
-    L1, L2=100, 2.5
+    L1, L2=2.5*sc_band_max/10, 2.5*sc_band_min/10
     ax.arrow(sc_band_min, -20, sc_band_max-L1, 0, head_width=3, head_length=L1, fc='k', ec='k')
     ax.arrow(sc_band_max, -20, -sc_band_max+sc_band_min+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
     ax.axis([1, f[-1], -160, 0])
