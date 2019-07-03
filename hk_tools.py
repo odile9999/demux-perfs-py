@@ -148,6 +148,7 @@ def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True):
     general_tools.checkdir(plotdirname)
     pltfilename1 = os.path.join(plotdirname, 'PLOT_HK.png')
     pltfilename2 = os.path.join(plotdirname, 'PLOT_HK_LIMS.png')
+    pltfilename3 = os.path.join(plotdirname, 'PLOT_HK_TEMP.png')
 
     # detection of valid hks
     n_valid_hk = count_valid_hk(hk)
@@ -227,7 +228,7 @@ def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True):
             item.set_weight('bold')
             item.set_fontsize(15)
         fig.tight_layout()
-        plt.savefig("TEMP_DAC.png", bbox_inches='tight')
+        plt.savefig(pltfilename3, bbox_inches='tight')
 
     return()
 # -----------------------------------------------------------------------
