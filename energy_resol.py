@@ -151,6 +151,7 @@ def get_pix_iq(filename, config, pix):
     module = np.sqrt(chan0_i[:, pix].astype(float)**2 + chan0_q[:, pix].astype(float)**2)
     t=np.arange(len(module))/fs
     return(t, module)
+    
 
 # -----------------------------------------------------------------------------
 def make_npy(fulldirname, config, pix):

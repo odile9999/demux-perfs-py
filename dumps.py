@@ -9,7 +9,6 @@ import get_data, general_tools
 def analyse_dump(sig, nb, config):
 
     print("------------------------------------")
-    sigfdb = np.array([])  
     f_carriers = np.array([])  
     io_str=""
     if abs(sig).max()==0:
@@ -22,7 +21,7 @@ def analyse_dump(sig, nb, config):
 def process_dump(fulldirname, config, max_duration=0.2):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
-
+        
         Parameters
         ----------
         fulldirname : string
@@ -129,36 +128,27 @@ def process_dump(fulldirname, config, max_duration=0.2):
         ###########################################################################
         print("Processing datastream of BIAS signal...")
         cfdb, f_carriers, io_str = analyse_dump(c, nbc, config)
-        if (len(cfdb)>0):
-            plot_dump(c, nbc, cfdb, f_carriers, config, "Signal "+name_c+plot_str, plotfilename_c)
-            io_str = '\
+        plot_dump(c, nbc, cfdb, f_carriers, config, "Signal "+name_c+plot_str, plotfilename_c)
+        io_str = '\
     == Measurements on data stream ' + name_c + '\n\
     =============================================================================\n' + io_str
-            flog.write(io_str)
-        else:
-            flog.write("Bias signal data stream is empty")
+        flog.write(io_str)
     
         print("Processing datastream of INPUT signal...")
         afdb, _, io_str = analyse_dump(a, nba, config)
-        if (len(afdb)>0):
-            plot_dump(a, nba, afdb, f_carriers, config, "Signal "+name_a+plot_str, plotfilename_a)
-            io_str = '\
+        plot_dump(a, nba, afdb, f_carriers, config, "Signal "+name_a+plot_str, plotfilename_a)
+        io_str = '\
     == Measurements on data stream ' + name_a + '\n\
     =============================================================================\n' + io_str
-            flog.write(io_str)
-        else:
-            flog.write("Input signal data stream is empty")
-            
+        flog.write(io_str)
+
         print("Processing datastream of FEEDBACK signal...")
         bfdb, _, io_str = analyse_dump(b, nbb, config)
-        if (len(bfdb)>0):
-            plot_dump(b, nbb, bfdb, f_carriers, config, "Signal "+name_b+plot_str, plotfilename_b)
-            io_str = '\
+        plot_dump(b, nbb, bfdb, f_carriers, config, "Signal "+name_b+plot_str, plotfilename_b)
+        io_str = '\
     == Measurements on data stream ' + name_b + '\n\
     =============================================================================\n' + io_str
-            flog.write(io_str)
-        else:
-            flog.write("Feedback signal data stream is empty")
+        flog.write(io_str)
 
         flog.close()
 
@@ -422,6 +412,20 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
             ax5.semilogx(f_spur_max, spur_max, '*', color='red')
         ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs],'o', color='orange')
 
+    # Plotting spuriouses for the FBCK signal
+    if plotfilename[-8:-4]=="FBCK":
+        slice = sigfdb[i_car+int(config['ScBandMin']/f_res):i_car+int(config['ScBandMax']/f_res)]
+        i_spur_max_fb=np.where(slice == slice.max())[0]+i_car+int(config['ScBandMin']/f_res)
+        f_spur_max_fb=f_shift[i_spur_max_fb][0]
+        print('====== ', f_spur_max_fb)
+        spur_max_fb=sigfdb[i_spur_max_fb]
+        spur_max_fb_text1 = '{0:5.1f}dBc'.format((spur_max_fb-sigfdb[i_car])[0])
+        spur_max_fb_text2 = 'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                    .format(f_spur_max_fb, (spur_max_fb-sigfdb[i_car])[0])
+        ax5.semilogx(f_spur_max_fb, spur_max_fb, '*', color='red')
+        ax5.text(f_spur_max_fb, spur_max_fb+5, spur_max_fb_text1, horizontalalignment='center', color='red')
+        ax5.text(3, -75, spur_max_fb_text2)
+
     fig.tight_layout()
     #plt.show()
     plt.savefig(plotfilename, bbox_inches='tight')
@@ -560,10 +564,10 @@ def noiseandspurpower(sigf, indexes, df, config):
     return(powers_db)
 
 # -----------------------------------------------------------------------
-def process_dump_pulses_adc_dac(fulldirname, config, dump_type, zoom_factor=20):
+def process_dump_pulses(fulldirname, config):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
-        INPUT and BIAS or FEEDBACK signals while pulses.
+        INPUT signal while pulses.
         
         Parameters
         ----------
@@ -572,12 +576,6 @@ def process_dump_pulses_adc_dac(fulldirname, config, dump_type, zoom_factor=20):
 
         config : dictionnary
         Contains path and constants definitions
-
-        dump_type : string
-        Type of data : "IN-BIA_PULSE" or "IN-FBK_PULSE"
-
-        zoom_factor : int
-        Fraction of pulse length to be shown (default = 20  i.e. 1/20 of the pulse lendth)
 
         Returns
         -------
@@ -590,26 +588,24 @@ def process_dump_pulses_adc_dac(fulldirname, config, dump_type, zoom_factor=20):
     general_tools.checkdir(plotdirname)
 
     fs = config["fs"]
-    nba, nbb = 12, 16 # INPUT and BIAS (or FEEDBACK) signals over 12 and 16 bits respectively
+    nb = 12 # INPUT signal over 12 bits
 
+    f_type_deb, f_type_fin = 21, 33
     dumpfilenames = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[-16:]==dump_type+'.dat']
+                and f[-4:]=='.dat'\
+                and f[f_type_deb:f_type_fin]=="IN-BIA_PULSE"]
 
     if len(dumpfilenames)>0:
         dumpfilename = os.path.join(datadirname, dumpfilenames[0])
-        plotfilenamea = os.path.join(plotdirname, "PLOT_INPUT_WITH_PULSES.png")
-        plotfilenameb = os.path.join(plotdirname, "PLOT_"+dump_type[3:6]+"_WITH_PULSES.png")
+        plotfilename = os.path.join(plotdirname, "PLOT_INPUT_WITH_PULSES.png")
 
         # Getting the data from dump file
         data, _ = get_data.readfile(dumpfilename)
 
         channel=int(data[0, 1]/2**12)
         a=data[1:,0]
-        b=data[1:,1]
-
-        ppa=a.max()-a.min()
-        ppb=b.max()-b.min()
+        pp=a.max()-a.min()
     
         nval=len(a)
         duration = (nval/fs)
@@ -618,180 +614,72 @@ def process_dump_pulses_adc_dac(fulldirname, config, dump_type, zoom_factor=20):
 
         pulse_length = 1024*128
         center = a[pulse_length:-pulse_length] # Only consider the center of the dumb to have a full pulse
-        imax = np.where(center==center.max())[0][0]+pulse_length
+        imax = np.where(center==np.max(center))[0][0]+pulse_length
         ideb = imax - 128*100
         ifin = imax + pulse_length
-        ideb_zoom = imax - 128*10
-        ifin_zoom = imax + int(pulse_length / zoom_factor)
         i3 = ifin - 128*30
         i2 = ifin - 128*100
         i1 = ifin - 128*170
 
-        # Making plot of input signal
-        if (ppa>0): # Data stream is not empty
-            fig = plt.figure(figsize=(8, 10))
-            io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PP(Input) = {1:5.2f}".format(channel, 2.**nba/ppa)
-            fig.text(0.1, 0.982, io_str, family='monospace')
-
-            #---------------------------
-            # Assumptions:
-            # - The FSR of the ADC corresponds to the FSR output of the SQUID (i.e. 0.5Phi0pp)
-            # - 12keV corresponds to 0.3Phi0 at SQUID input
-            # - The "SQUID flux" versus "ADC input level" is a non linear function for high signals (sine function)
-            # - ADC level for 12keV = FSR * sin(pi/2 * 0.3/0.5) / sin(pi/2)
-            # - ADC level for 7keV = FSR * sin(pi/2 * 0.3*(7/12)/0.5) / sin(pi/2)
-            fsr_peak = 2**(nba-1) # FSR peak
-            fsr_flux = 0.5
-            twelve_kev_flux = 0.3
-            seven_kev_flux = 0.3*7./12.
-            twelve_kev_peak = fsr_peak * np.sin((np.pi/2)*twelve_kev_flux/fsr_flux) / np.sin(np.pi/2)
-            seven_kev_peak = fsr_peak * np.sin((np.pi/2)*seven_kev_flux/fsr_flux) / np.sin(np.pi/2)
-            deltatext = 128*30
-            ytext = -0.1 * fsr_peak
-
-            ax = fig.add_subplot(2, 1, 1)
-            ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
-            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [twelve_kev_peak, twelve_kev_peak], '--g', linewidth=0.5)
-            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-twelve_kev_peak, -twelve_kev_peak], '--g', linewidth=0.5)
-            plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
-                xy=(t[i1]*1e3, fsr_peak), textcoords='data',
-                arrowprops=dict(width=0.8, headwidth=4, headlength=12))
-            plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
-                xy=(t[i1]*1e3, -fsr_peak), textcoords='data',
-                arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-            plt.text(t[i1-deltatext]*1e3, ytext, r'0.50 $\phi_0$', rotation=90)
-
-            plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
-                xy=(t[i2]*1e3, twelve_kev_peak), textcoords='data',
-                arrowprops=dict(width=0.8, headwidth=4, headlength=12))
-            plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
-                xy=(t[i2]*1e3, -twelve_kev_peak), textcoords='data',
-                arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-            plt.text(t[i2-deltatext]*1e3, ytext, r'0.30 $\phi_0$ (12 keV)', rotation=90)
-
-            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [seven_kev_peak, seven_kev_peak], '--g', linewidth=0.5)
-            ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-1*seven_kev_peak, -1*seven_kev_peak], '--g', linewidth=0.5)
-            plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
-                xy=(t[i3]*1e3, seven_kev_peak), textcoords='data',
-                arrowprops=dict(width=0.8, headwidth=4, headlength=12))
-            plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
-                xy=(t[i3]*1e3, -seven_kev_peak), textcoords='data',
-                arrowprops=dict(width=0.5, headwidth=4, headlength=12))
-            plt.text(t[i3-deltatext]*1e3, ytext, r'{0:3.2f} $\phi_0$ (7 keV)'.format(seven_kev_flux), rotation=90)
-
-            ax.set_ylabel("ADC unit (FSR range)")
-            ax.set_xlabel("Time (ms)")
-            ax.set_ylim([-2**(nba-1), 2**(nba-1)])
-
-            ax2 = fig.add_subplot(2, 1, 2)
-            ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, a[ideb_zoom:ifin_zoom])
-            ax2.set_ylabel("ADC unit (FSR range)")
-            ax2.set_xlabel("Time (ms)")
-            ax2.set_ylim([1.1*a.min(), 1.1*a.max()])
-
-            fig.tight_layout()
-            plt.savefig(plotfilenamea, bbox_inches='tight')
-
-
-        # Making plot of bias or feedback signal
-        if (ppb>0): # Data stream is not empty
-            fig = plt.figure(figsize=(8, 10))
-            io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, $FSR(DAC)/PP(".format(channel)+dump_type[3:6]+")$ = {0:5.2f}".format(2.**nbb/ppb)
-            fig.text(0.1, 0.987, io_str, family='monospace')
-
-            ax = fig.add_subplot(2, 1, 1)
-            ax.plot(t[ideb:ifin]*1e3, b[ideb:ifin])
-            ax.set_ylabel("DAC unit (FSR range)")
-            ax.set_xlabel("Time (ms)")
-            ax.set_ylim([-2**(nbb-1), 2**(nbb-1)])
-
-            ax2 = fig.add_subplot(2, 1, 2)
-            ax2.plot(t[ideb_zoom:ifin_zoom]*1e3, b[ideb_zoom:ifin_zoom])
-            ax2.set_ylabel("DAC unit (FSR range)")
-            ax2.set_xlabel("Time (ms)")
-            ax2.set_ylim([1.1*b.min(), 1.1*b.max()])
-
-            fig.tight_layout()
-            plt.savefig(plotfilenameb, bbox_inches='tight')
-
-# -----------------------------------------------------------------------
-def process_dump_pulses_iq(fulldirname, config):
-    r"""
-        This function reads and process the data of DRE-DEMUX data dumps.
-        IQ signal while pulses.
-        
-        Parameters
-        ----------
-        fulldirname : string
-        The name of the dump file (with the path)
-
-        config : dictionnary
-        Contains path and constants definitions
-
-        Returns
-        -------
-        Nothing
-
-        """
-
-    datadirname = os.path.join(fulldirname, config['dir_data'])
-    plotdirname = os.path.join(fulldirname, config['dir_plots'])
-    general_tools.checkdir(plotdirname)
-
-    fs = config["fs"]/2**config["power_to_fs2"]
-
-    f_type_deb, f_type_fin = 21, 33
-    dumpfilenames = [f for f in os.listdir(datadirname) \
-                if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[-4:]=='.dat'\
-                and f[f_type_deb:f_type_fin]=="IQ-ALL_PULSE"]
-
-    if len(dumpfilenames)>0:
-        dumpfilename = os.path.join(datadirname, dumpfilenames[0])
-        plotfilename = os.path.join(plotdirname, "PLOT_MODULE_WITH_PULSES.png")
-
-        # Getting the data from dump file
-        chi, chq, _, _, flag_error = get_data.read_iq(dumpfilename)
-
-        modulus = np.sqrt(chi.astype('float')**2 + chq.astype('float')**2)
-        npts = len(modulus)
-
-        t = np.arange(npts)/fs
-
-        pulse_length = 1024
-        pix = 40 # test pixel
-        modulus = modulus[pulse_length:-pulse_length] # Only consider the center of the dumb to have a full pulse
-        imax = np.where(modulus[:,pix]==modulus[:,pix].min())[0][0]
-        ideb = imax - int(pulse_length/4)
-        ifin = imax + pulse_length
-
-        # Making plots
-        fig = plt.figure(figsize=(8, 8))
-        io_str="File: "+dumpfilenames[0]
+        # Making plot
+        fig = plt.figure(figsize=(8, 6))
+        io_str="File: "+dumpfilenames[0]+", Channel {0:1d}, FSR(ADC)/PeakPeak = {1:5.2f}".format(channel, 2.**12/pp)
         fig.text(0.1, 0.982, io_str, family='monospace')
 
-        ax1 = fig.add_subplot(2, 1, 1)
-        ax1.plot(t[ideb:ifin]*1e3, modulus[ideb:ifin, :])
-        ax1.set_ylim(0, 2**(16-1))
-        ax1.set_title("All pixels")
-        ax1.set_ylabel("Module")
-        ax1.set_xlabel("Time (ms)")
+        #---------------------------
+        # Assumptions:
+        # - The FSR of the ADC corresponds to the FSR output of the SQUID (i.e. 0.5Phi0pp)
+        # - 12keV corresponds to 0.3Phi0 at SQUID input
+        # - The "SQUID flux" versus "ADC input level" is a non linear function for high signals (sine function)
+        # - ADC level for 12keV = FSR * sin(pi/2 * 0.3/0.5) / sin(pi/2)
+        # - ADC level for 7keV = FSR * sin(pi/2 * 0.3*(7/12)/0.5) / sin(pi/2)
+        fsr_peak = 2**(nb-1) # FSR peak
+        fsr_flux = 0.5
+        twelve_kev_flux = 0.3
+        seven_kev_flux = 0.3*7./12.
+        twelve_kev_peak = fsr_peak * np.sin((np.pi/2)*twelve_kev_flux/fsr_flux) / np.sin(np.pi/2)
+        seven_kev_peak = fsr_peak * np.sin((np.pi/2)*seven_kev_flux/fsr_flux) / np.sin(np.pi/2)
+        deltatext = 128*30
+        ytext = -0.1 * fsr_peak
 
-        ax2 = fig.add_subplot(2, 1, 2)
-        slice = modulus[ideb:ifin, pix]
-        ax2.plot(t[ideb:ifin]*1e3, slice)
-        ax2.set_ylim(0, 2**(16-1))
-        ax2.set_title("Test pixel")
-        ax2.set_ylabel("Module")
-        ax2.set_xlabel("Time (ms)")
-        message = "Modulation ratio = {0:5.2f}%".format(100*(1-slice.min()/slice.max()))
-        ax2.text(t[ideb]*1e3, 30000, message)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(t[ideb:ifin]*1e3, a[ideb:ifin])
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [twelve_kev_peak, twelve_kev_peak], '--g', linewidth=0.5)
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-twelve_kev_peak, -twelve_kev_peak], '--g', linewidth=0.5)
+        plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
+            xy=(t[i1]*1e3, fsr_peak), textcoords='data',
+            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+        plt.annotate(s='',xytext=(t[i1]*1e3, 0), xycoords='data',
+            xy=(t[i1]*1e3, -fsr_peak), textcoords='data',
+            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+        plt.text(t[i1-deltatext]*1e3, ytext, r'0.50 $\phi_0$', rotation=90)
+
+        plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
+            xy=(t[i2]*1e3, twelve_kev_peak), textcoords='data',
+            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+        plt.annotate(s='',xytext=(t[i2]*1e3, 0), xycoords='data',
+            xy=(t[i2]*1e3, -twelve_kev_peak), textcoords='data',
+            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+        plt.text(t[i2-deltatext]*1e3, ytext, r'0.30 $\phi_0$ (12 keV)', rotation=90)
+
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [seven_kev_peak, seven_kev_peak], '--g', linewidth=0.5)
+        ax.plot([t[ideb]*1e3,t[ifin]*1e3], [-1*seven_kev_peak, -1*seven_kev_peak], '--g', linewidth=0.5)
+        plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
+            xy=(t[i3]*1e3, seven_kev_peak), textcoords='data',
+            arrowprops=dict(width=0.8, headwidth=4, headlength=12))
+        plt.annotate(s='',xytext=(t[i3]*1e3, 0), xycoords='data',
+            xy=(t[i3]*1e3, -seven_kev_peak), textcoords='data',
+            arrowprops=dict(width=0.5, headwidth=4, headlength=12))
+        plt.text(t[i3-deltatext]*1e3, ytext, r'{0:3.2f} $\phi_0$ (7 keV)'.format(seven_kev_flux), rotation=90)
+
+        ax.set_ylabel("ADC unit (FSR range)")
+        ax.set_xlabel("Time (ms)")
+        ax.set_ylim([-2**(nb-1), 2**(nb-1)])
 
         fig.tight_layout()
         #plt.show()
         plt.savefig(plotfilename, bbox_inches='tight')
 
-# -----------------------------------------------------------------------
 def mosaic_labels(ax, box, n_cols, n_lines, x_lab, y_lab):
     r"""
         This function defines the xlabel and ylabel for a plot in a plot mosaic.
@@ -902,7 +790,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax.text(40, -17, r'band of interest', fontsize=11)
     ax.text(sc_band_min, snr_pix_min-5, r'DRD requirement level', fontsize=11)
     ax.text(1.5, -159, bw_res_warn, fontsize=11)
-    L1, L2=2.5*sc_band_max/10, 2.5*sc_band_min/10
+    L1, L2=100, 2.5
     ax.arrow(sc_band_min, -20, sc_band_max-L1, 0, head_width=3, head_length=L1, fc='k', ec='k')
     ax.arrow(sc_band_max, -20, -sc_band_max+sc_band_min+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
     ax.axis([1, f[-1], -160, 0])
