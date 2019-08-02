@@ -6,23 +6,156 @@ Created on 26 juil. 2019
 import os
 import numpy as np
 import argparse
+import general_tools
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from scipy.optimize.minpack import curve_fit
 
-DRE_DATA_ROOT = os.path.normcase("./") # Put path to folder containing data files here
+DRE_DATA_ROOT = os.path.normcase("./EP_test_data/") # Put path to folder containing data files here
 PIXEL_DATA_DIR = os.path.normcase("./Pixel_data_LPA75um_AR0.5/")
 TES_NOISE_SPECTRUM = os.path.join(PIXEL_DATA_DIR,"noise_spectra_bbfb_noFBDAC.fits")
 XIFUSIM_TEMPLATE = os.path.join(PIXEL_DATA_DIR,"pulse_withBBFB.npy")
 THRESHOLD_ESTIMATE=8000
 PREBUFF=200
 JITTER_MARGIN=10
-NONLINEAR_FACTOR = 1.361
+
+# ############################################################
+# Function to read data records
+# ############################################################
+def get_records(filename, verbose=False):
+    '''Reads sample records from a file
+
+    Arguments:
+        - filename: name of the file containing the sample records
+        - verbose: option to print the nonlinear factor
+
+    Returns: an array containing the records
+    '''
+
+    # getting record length from file
+    dtini=np.dtype([('timestamp', np.float), \
+                 ('channelId', np.int8), \
+                 ('pixelId', np.int8), \
+                 ('recordSize', np.int16)])
+
+    fdat=open(filename, 'rb')
+    data=np.fromfile(fdat, dtype=dtini)
+    fdat.close()
+
+    recordsize=data[0]['recordSize']    
+
+    # getting the data
+    dt=np.dtype([('timestamp', np.float), \
+                 ('channelId', np.int8), \
+                 ('pixelId', np.int8), \
+                 ('recordSize', np.int16), \
+                 ('records', np.dtype((np.float, recordsize)))])
+    
+    fdat=open(filename, 'rb')
+    data=np.fromfile(fdat, dtype=dt)
+    fdat.close()
+
+    print(data['pixelId'][0])
+    print(data['pixelId'][1])
+    print(data['records'][0][0])
+    print(data['records'][0][1])
+    print(data['records'][0][2])
+    plt.plot(data['timestamp'])
+    #plt.plot(data['records'][0])
+    plt.show()
+
+    return data['records']
+
+# ############################################################
+# Function to get the pixel non linearity factor from its information file
+# ############################################################
+def get_nonlinear_factor(dirname, verbose=False):
+    '''Reads the pixel's nonlinear factor from its information file
+
+    Arguments:
+        - dirname: name of the directory containing the pixel's related data
+        - verbose: option to print the nonlinear factor
+
+    Returns: the nonlinear factor
+    '''
+    filename=os.path.join(dirname,'pixel_info.csv')
+    NLF=general_tools.get_csv(filename)['NONLINEAR_FACTOR']
+    if verbose:
+        print("Pixel non linearity factor: ", NLF)
+    return NLF
+
+# ############################################################
+# Function to create pulse average
+# ############################################################
+def pulse_average(pulse_list,ignore_outlayers=False):
+    """Creates pulse template from a set of pulses. Outlayers can be manually rejected.
+    
+    Argumnents:
+        - pulse_list: 
+        
+    Returns: pulse_template 
+        - pulse_template: template created from the average of detected pulses
+    """
+    satisfied=False
+    
+    # Iteratively compute the average of the detected pulses and reject 10% worst if requested
+    pulse_list = np.array(pulse_list)
+    while not satisfied:
+        mean_pulse = np.mean(pulse_list,0)
+        if ignore_outlayers:
+            break
+        diff_list = np.sum(abs(pulse_list-mean_pulse),1)
+        plt.clf()
+        plt.plot(mean_pulse,label='Averaged pulse')
+        plt.plot(pulse_list[diff_list.argmax()],label='Worst outlayer in current process')
+        plt.title("Pulse averaging process")
+        plt.legend(loc="best")
+        plt.show(block=False)
+        answer = input("Suppress 10% worst [y/n]?")
+        if answer=='y':
+            pulse_list = pulse_list[(diff_list<np.percentile(diff_list,90))]
+        else:
+            satisfied=True
+            
+    return mean_pulse
 
 # ############################################################
 # Function to estimate a noise spectrum average
 # ############################################################
-def accumulate_noise_spectra(record_data,pulse_length,abs_mean=False,rebin=1,normalize=False,dt=6.4e-6):
+def accumulate_noise_spectra(noise_records,pulse_length,abs_mean=False,rebin=1,normalize=False,dt=6.4e-6):
+    '''Accumulates noise spectra from pulse free data streams
+    
+    Arguments:
+        - noise_records: input pulse-free records
+        - pulse_length: length of the records, fft to perform
+        - abs_mean: option to average the abs values instead of the squares
+        - rebin: rebinning factor to apply on the final spectrum
+        - normalize: option to normalize the spectrum in proper A/rHz units
+        - dt: sampling rate of the data (only relevant in case of normalize option)
+        
+    Returns: average noise spectra in a np vector of length pulse_length 
+    '''
+    noise_spectrum_tot = np.zeros(int(pulse_length/rebin))
+    nb_noise_estimates=0
+    for stream_data in noise_records:
+        for i in range(int(len(stream_data)/pulse_length)):
+            if abs_mean:
+                noise_spectrum_tot+=(abs(np.fft.fft(stream_data[i][:pulse_length]))).reshape(-1,rebin).mean(1)
+            else:
+                noise_spectrum_tot+=(abs(np.fft.fft(stream_data[i][:pulse_length]))**2).reshape(-1,rebin).mean(1)
+            nb_noise_estimates+=1
+    print("Number of records used in noise spectrum calibration:",nb_noise_estimates)
+    noise_spectrum_tot/=nb_noise_estimates
+    if not abs_mean:
+        noise_spectrum_tot = np.sqrt(noise_spectrum_tot)
+    if normalize:
+        noise_spectrum_tot*=np.sqrt(2*dt/pulse_length)
+    return noise_spectrum_tot
+
+# ############################################################
+# Function to estimate a noise spectrum average
+# ############################################################
+def accumulate_noise_spectra_ini(record_data,pulse_length,abs_mean=False,rebin=1,normalize=False,dt=6.4e-6):
     '''Accumulates noise spectra from pulse free data streams
     
     Arguments:
@@ -221,32 +354,24 @@ def apply_baseline_correction(energies,baseline,baseline_correction,verbose=True
         plt.show()
     
     return energies
-    
+
+
 # ############################################################
-# Function to trigger pulses in a stream
+# Function to Estimate threshold level from initial noise fluctuations
 # ############################################################
-def trigger_pulses(stream_data,nsigmas=7,threshold_estimate=THRESHOLD_ESTIMATE,pulse_length=2048,prebuffer=PREBUFF,verbose=False,
-                   forced_threshold=None,jitter_margin=0,silent=False):
-    """Detects individual pulses in a stream and returns the list of pulses
+def get_threshold(noise_record,nsigmas=7,verbose=False,forced_threshold=None):
+    """Define the threshold level from noise data
     
     Arguments:
-        - stream_data: array of stream values to be triggered
+        - noise_record: array of stream values to be triggered
         - nsigmas: significance of the pulse detection with respect to the initial stream fluctuations
-        - threshold_estimate: length of the initial data part that can be used for threshold estimate
-        - pulse_length: length of the pulses to detect
-        - prebuffer: length of data to leave before each pulse
         - verbose: option to print and plot additional information, not relevant for nominal script use
         - forced_threshold: if given, use this value as threshold instead of computing it from the start of the data
-        - jitter_margin: number of points to add on each side of triggered pulses to allow jitter correction
     """
-    if not silent:
-        print("WARNING: this function was written without any care for pileup detection")
-    
-    # Estimate threshold level from initial noise fluctuations
     if forced_threshold is not None:
         threshold = forced_threshold
     else:
-        noise = stream_data[:threshold_estimate]
+        noise = noise_record
         derivated_noise = np.convolve(noise,[1,-1],mode="valid")
         threshold = nsigmas*np.std(derivated_noise)
         if verbose:
@@ -255,85 +380,61 @@ def trigger_pulses(stream_data,nsigmas=7,threshold_estimate=THRESHOLD_ESTIMATE,p
             plt.plot(derivated_noise)
             plt.title("Data used for threshold estimation")
             plt.show()
+    return threshold
         
-    # Derivate data
-    derivated_stream = np.convolve(stream_data,[1,-1],mode="valid")
-    if verbose:
-        plt.plot(derivated_stream)
-        plt.plot(threshold*np.ones_like(derivated_stream))
-        plt.title("Comparison of pulses and threshold")
-        plt.show()
-        
-    # Trigger data
-    ii = 0
-    ii_end = len(derivated_stream)
 
-    # Iterate over stream, looking for pulses
-    pulse_list = []
-    pulse_times = []
-    while ii<ii_end:
-        # If data is above threshold, add pulse to list and go to its end to continue search
-        if derivated_stream[ii] > threshold:
-            pulse_time = ii-prebuffer-1
-            if verbose:
-                print('Pulse detected at time',pulse_time)
-            pulse_times.append(pulse_time)
-            pulse_list.append(stream_data[pulse_time-jitter_margin:pulse_time+pulse_length+jitter_margin])
-            ii = pulse_time+pulse_length
-            
-        ii+=1
+# ############################################################
+# Function to trigger pulses in a stream
+# ############################################################
+def trigger_pulses(event_records,threshold,pulse_length=2048,prebuffer=PREBUFF,
+                   verbose=False,jitter_margin=0,silent=False):
+    """Detects individual pulses in a stream and returns the list of pulses
+    
+    Arguments:
+        - event_records: array of event records to be triggered
+        - threshold: threshold level for pulse detection
+        - pulse_length: length of the pulses to detect
+        - prebuffer: length of data to leave before each pulse
+        - verbose: option to print and plot additional information, not relevant for nominal script use
+        - jitter_margin: number of points to add on each side of triggered pulses to allow jitter correction
+    """
+    if not silent:
+        print("WARNING: this function was written without any care for pileup detection")
+
+    pulses=np.array((len(event_records, pulse_length)))
+    pulse_time=np.array(len(event_records))
+
+    for i in range(len(event_records)):
+        record=event_records[i]
+        # Derivate data
+        derivated_record = np.convolve(record,[1,-1],mode="valid")
+        if verbose:
+            plt.plot(derivated_record)
+            plt.plot(threshold*np.ones_like(derivated_record))
+            plt.title("Comparison of pulses and threshold")
+            plt.show()
+
+        i_threshold=np.where(derivated_record>threshold)[0]
+        pulse_time[i] = i_threshold-prebuffer-1
+        if verbose:
+            print('Pulse detected at time',pulse_time[i])
+        pulses[i]=record[pulse_time-jitter_margin:pulse_time+pulse_length+jitter_margin]
             
     # Overplot triggered pulses if requested 
     if verbose:
         plt.plot(stream_data)
-        for pulse,pulse_time in zip(pulse_list,pulse_times):
+        for pulse,pulse_time in zip(pulses,pulse_times):
             plt.plot(np.arange(pulse_time-jitter_margin,pulse_time+jitter_margin+pulse_length,1),pulse,c='green')
         plt.show()
         
-        for pulse in pulse_list:
+        for pulse in pulses:
             plt.plot(pulse)
         plt.show()
     
     # Print trigger statistics and return
     if not silent:
         print("Triggered {0:6d} pulses".format(len(pulse_times)))
-    return pulse_list,pulse_times,threshold
-
-
-
-# ############################################################
-# Function to create pulse average
-# ############################################################
-def pulse_average(pulse_list,ignore_outlayers=False):
-    """Creates pulse template from a set of pulses. Outlayers can be manually rejected.
-    
-    Argumnents:
-        - pulse_list: 
-        
-    Returns: pulse_template 
-        - pulse_template: template created from the average of detected pulses
-    """
-    satisfied=False
-    
-    # Iteratively compute the average of the detected pulses and reject 10% worst if requested
-    pulse_list = np.array(pulse_list)
-    while not satisfied:
-        mean_pulse = np.mean(pulse_list,0)
-        if ignore_outlayers:
-            break
-        diff_list = np.sum(abs(pulse_list-mean_pulse),1)
-        plt.clf()
-        plt.plot(mean_pulse)
-        plt.plot(pulse_list[diff_list.argmax()])
-        plt.title("Worst outlayer in current pulse averaging process")
-        plt.show(block=False)
-        answer = input("Suppress 10% worst [y/n]?")
-        if answer=='y':
-            pulse_list = pulse_list[(diff_list<np.percentile(diff_list,90))]
-        else:
-            satisfied=True
-            
-    return mean_pulse
+    return pulses,pulse_times,threshold
 
 
 # ############################################################
@@ -408,11 +509,24 @@ if __name__ == '__main__':
     print("\nPerforming pulse template calibration...")
     
     # Load pulse data to be used for template calibration
-    pulse_data = -np.load(args.directory+"pulses.npy")[1]
-    
+    pulse_data=-get_records(args.directory+"event_records.dat", verbose=args.verbose)
+    #JUST FOR DEBUG
+    #pulse_data=pulse_data[:int(len(pulse_data)*0.7)]
+
+    print("===>> ", len(pulse_data))
+    print("===>> ", len(pulse_data[10]))
+    plt.plot(pulse_data[23])
+    plt.show()
+
+    # Define threshold level
+    threshold=get_threshold(noise_record,nsigmas=7,verbose=args.verbose,forced_threshold=None)
+
     # Trigger individual pulses
-    pulse_list,pulse_times,threshold = trigger_pulses(pulse_data,args.threshold,threshold_estimate=THRESHOLD_ESTIMATE,verbose=args.verbose,
-                                                      pulse_length=args.pulse_length,prebuffer=PREBUFF)
+    pulse_list,pulse_times=trigger_pulses(event_records,threshold,pulse_length=2048,prebuffer=PREBUFF,
+                   verbose=False,jitter_margin=0,silent=False)
+
+    #pulse_list,pulse_times,threshold = trigger_pulses(pulse_data,args.threshold,threshold_estimate=THRESHOLD_ESTIMATE,verbose=args.verbose,
+    #                                                  pulse_length=args.pulse_length,prebuffer=PREBUFF)
     
     # Generate pulse template as average of detected pulses
     pulse_template = pulse_average(pulse_list,ignore_outlayers=args.ignore_outlayers)
@@ -505,7 +619,7 @@ if __name__ == '__main__':
     
     print("\nPerforming noise spectrum calibration...")
     
-    # Load pulse free data to generate noise spectrum
+    # Load pulse-free data to generate noise spectrum
     noise_data = np.load(args.directory+"noise.npy")[1]
     if args.verbose:
         plt.plot(noise_data)
@@ -564,7 +678,8 @@ if __name__ == '__main__':
     # ############################################################
     
     print('\nReconstructing pulses...')
-    
+    NONLINEAR_FACTOR=get_nonlinear_factor(PIXEL_DATA_DIR, verbose=args.verbose)
+
     # Load pulse data containing the events to reconstruct
     pulse_data = -np.load(args.directory+"measure.npy")[1]
     

@@ -13,7 +13,7 @@
 
     Routine listing
     ===============
-    get_conf()
+    get_csv()
     print_conf()
     get_session_info()
     print_session_info()
@@ -47,13 +47,14 @@ def checkdir(dirname):
     return()
 
 # -----------------------------------------------------------------------
-def get_conf():
+def get_csv(filename):
     r"""
         This function reads a dictionnary from a csv file.
 
         Parameters:
         -----------
-        None
+        filename: string
+        The name of the csv file
 
         Returns
         -------
@@ -62,11 +63,9 @@ def get_conf():
         """
 
     dictionnary={}
-    filename='demux_tools_cfg.csv'
 
     if not os.path.exists(filename):
-        print("Configuration file not found.")
-        print("It is required to define the path.")
+        print("File "+filename+" not found.")
     else:
         with open(filename, newline='') as csvfile:
             dict_reader = csv.reader(csvfile, delimiter=';', quotechar='|')
