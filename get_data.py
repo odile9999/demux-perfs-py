@@ -71,8 +71,13 @@ def readfile(dumpfilename, quiet=True):
     fdat.close()
         
     DADA=-9510      # 0xDADA interpreted as int16
-    if data[0] != DADA:
-        raise ValueError('Problem with file format!')
+    i=0
+    while data[i]!=DADA:
+        i+=1
+        if i>100:
+            raise ValueError('Problem with file format!')
+    data=data[i:]
+   
     header2=data[1].astype('uint16')
     header24=int(header2/2**12)
     header23=int((header2-header24*2**12)/2**8)
@@ -81,7 +86,11 @@ def readfile(dumpfilename, quiet=True):
     dumptype=header22
     if not quiet:
         print('  Dump type is: ' + dumpstr(dumptype))
-    
+
+    # Check that IQ dumps starts with channel 0
+    if dumptype == 8 and header23==0:
+        data=data[42:]
+
     data = np.resize(data, (len(data)//2, 2))
 
     return(data, dumptype)

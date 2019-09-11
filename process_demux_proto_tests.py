@@ -3,7 +3,6 @@ import hk_tools
 import gbw
 import dumps
 import dumps_dds
-import energy_resol
 import baseline
 import os
 import ep_tools
