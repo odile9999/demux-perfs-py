@@ -41,6 +41,10 @@ def process_demux_proto_tests(dirname):
     baseline.check_baseline(fulldirname, config)
 
     # -----------------------------------------------------------------------
+    # Checking delock behaviour
+    dumps.process_dump_delock_iq(fulldirname, config)
+
+    # -----------------------------------------------------------------------
     # Processing "Energy resolution characterization"
     dumps.process_dump_pulses_adc_dac(fulldirname, config, 'IN-BIA_PULSE', zoom_factor=50)
     dumps.process_dump_pulses_adc_dac(fulldirname, config, 'IN-FBK_PULSE', zoom_factor=50)

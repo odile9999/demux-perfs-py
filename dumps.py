@@ -1327,3 +1327,92 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
     return(sptdb)
 
 # -----------------------------------------------------------------------
+
+def process_dump_delock_iq(fulldirname, config):
+    r"""
+        This function reads and process the data of DRE-DEMUX data dumps.
+        IQ signal while pulses.
+        
+        Parameters
+        ----------
+        fulldirname : string
+        The name of the dump file (with the path)
+
+        config : dictionnary
+        Contains path and constants definitions
+
+        Returns
+        -------
+        Nothing
+
+        """
+
+    datadirname = os.path.join(fulldirname, config['dir_data'])
+    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    general_tools.checkdir(plotdirname)
+
+    fs = config["fs"]/2**config["power_to_fs2"]
+
+    f_type_deb, f_type_fin = 21, -4
+    dumpfilenames = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[-4:]=='.dat'\
+                and f[f_type_deb:f_type_fin]=="IQ-ALL_Manual_Delock"]
+
+    if len(dumpfilenames)>0:
+        dumpfilename = os.path.join(datadirname, dumpfilenames[0])
+        plotfilename = os.path.join(plotdirname, "PLOT_MODULE_WITH_DELOCK.png")
+
+        # Getting the data from dump file
+        chi, chq, _, _, flag_error = get_data.read_iq(dumpfilename)
+
+        modulus = np.sqrt(chi.astype('float')**2 + chq.astype('float')**2)
+        npts = len(modulus)
+
+        t = np.arange(npts)/fs
+
+        w_length = 64
+        pix = 40 # test pixel
+        imax = np.where(modulus[:,pix]==modulus[:,pix].min())[0][0]
+        ideb = imax - int(w_length/2)
+        ifin = imax + w_length
+
+        # Making plots
+        fig = plt.figure(figsize=(12, 12))
+        io_str="File: "+dumpfilenames[0]
+        fig.text(0.1, 0.982, io_str, family='monospace')
+
+        ymin, ymax = -1*2**(16-1), 2**(16-1)
+        ax1 = fig.add_subplot(2, 2, 1)
+        ax1.plot(t[ideb:ifin]*1e3, chi[ideb:ifin, :])
+        ax1.set_ylim(ymin, ymax)
+        ax1.set_title("All pixels")
+        ax1.set_ylabel("I")
+        ax1.set_xlabel("Time (ms)")
+
+        ax2 = fig.add_subplot(2, 2, 2)
+        ax2.plot(t[ideb:ifin]*1e3, chq[ideb:ifin, :])
+        ax2.set_ylim(ymin, ymax)
+        ax2.set_title("All pixels")
+        ax2.set_ylabel("Q")
+        ax2.set_xlabel("Time (ms)")
+
+        ax3 = fig.add_subplot(2, 2, 3)
+        ax3.plot(t[ideb:ifin]*1e3, chi[ideb:ifin, pix])
+        ax3.set_ylim(ymin, ymax)
+        ax3.set_title("Test pixel")
+        ax3.set_ylabel("I")
+        ax3.set_xlabel("Time (ms)")
+
+        ax4 = fig.add_subplot(2, 2, 4)
+        ax4.plot(t[ideb:ifin]*1e3, chq[ideb:ifin, pix])
+        ax4.set_ylim(ymin, ymax)
+        ax4.set_title("Test pixel")
+        ax4.set_ylabel("Q")
+        ax4.set_xlabel("Time (ms)")
+
+        fig.tight_layout()
+        #plt.show()
+        plt.savefig(plotfilename, bbox_inches='tight')
+
+# -----------------------------------------------------------------------
