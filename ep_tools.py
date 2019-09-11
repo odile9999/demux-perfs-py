@@ -88,7 +88,7 @@ def pulse_average(pulse_list,ignore_outlayers=False):
         plt.plot(mean_pulse,label='Averaged pulse')
         plt.plot(pulse_list[diff_list.argmax()],label='Worst outlayer in current process')
         plt.title("Pulse averaging process")
-        plt.legend(loc="best")
+        plt.legend(loc="best", prop=dict(size=7))
         plt.show(block=False)
         answer = input("  Suppress 10% worst [y/n]?")
         if answer=='y':
@@ -438,8 +438,8 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax2.set_title('Pulse template')
         ax2.set_xlabel('Time [ms]')
         ax2.set_ylabel("ADU")
-        ax2.set_ylim(0, 2**16)
-        ax2.legend(loc='best')
+        ax2.set_ylim(0, 2**15)
+        ax2.legend(loc='best', prop=dict(size=7))
         for item in ([ax2.title]):
             item.set_weight('bold')
             item.set_fontsize(8)
@@ -454,7 +454,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax3.plot(dre_template[decal:1000+decal],label='dre')
         ax3.plot(xifusim_template_decimated*baseline_scaling - dre_template[decal:1000+decal],label='difference')
         ax3.set_title('Direct difference between both templates')
-        ax3.legend(loc="best")
+        ax3.legend(loc="best", prop=dict(size=7))
         for item in ([ax3.title]):
             item.set_weight('bold')
             item.set_fontsize(8)
@@ -483,7 +483,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax5.set_xlabel("Frequency [Hz]")
         ax5.set_ylabel("PSD [AU]")
         ax5.set_title('Comparison of power spectra')
-        ax5.legend(loc="best")
+        ax5.legend(loc="best", prop=dict(size=7))
         for item in ([ax5.title]):
             item.set_weight('bold')
             item.set_fontsize(8)
@@ -499,7 +499,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax6.loglog(frequencies,total_noise[1:int(record_length/2)],label="Total noise")
         ax6.set_title('Average noise spectrum')
         ax6.set_title("DAC noise vs TES noise")
-        ax6.legend(loc="best")
+        ax6.legend(loc="best", prop=dict(size=7))
         for item in ([ax6.title]):
             item.set_weight('bold')
             item.set_fontsize(8)
@@ -551,7 +551,7 @@ def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,base
     ax1.hist(array_to_fit1,bins=bins1,histtype='stepfilled',facecolor=c)
     ax1.plot(axe_fit1,hist_fit1,c='r',linewidth=2, label='Fit : Er={0:5.3f} x {1:5.3f} = {2:5.3f} eV' \
         .format(NONLINEAR_FACTOR, 2.355*coeffs1[2], 2.355*coeffs1[2]*NONLINEAR_FACTOR))
-    ax1.legend(loc='upper left', prop=dict(size=6))
+    ax1.legend(loc='upper left', prop=dict(size=7))
     ax1.set_title('Initial energy resolution '+tes_text)
     ax1.set_xlabel("Error [eV]")
     ax1.set_ylabel("Occurences")
@@ -566,7 +566,7 @@ def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,base
     ax2=fig.add_subplot(5,2,3)
     ax2.plot(baselines,(energies-7)*1000,marker='.',linestyle='', c=c)
     ax2.plot(np.sort(baselines),(bl_correct_poly1(np.sort(baselines))-7)*1000,c='r',linewidth=2, label='Fit')
-    ax2.legend(loc='upper left', prop=dict(size=6))
+    ax2.legend(loc='upper left', prop=dict(size=7))
     ax2.set_title('Before baseline correction')
     ax2.set_xlabel('Baseline')
     ax2.set_ylabel('Energy - 7000 [eV]')
@@ -597,7 +597,7 @@ def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,base
     ax4.hist(array_to_fit2,bins=bins2,histtype='stepfilled',facecolor=c)
     ax4.plot(axe_fit2,hist_fit2,c='r',linewidth=2, label='Fit : Er={0:5.3f} x {1:5.3f} = {2:5.3f} eV' \
         .format(NONLINEAR_FACTOR, 2.355*coeffs2[2], 2.355*coeffs2[2]*NONLINEAR_FACTOR))
-    ax4.legend(loc='upper left', prop=dict(size=6))
+    ax4.legend(loc='upper left', prop=dict(size=7))
     ax4.set_title('Energy resolution after baseline correction '+tes_text)
     ax4.set_xlabel("Error [eV]")
     ax4.set_ylabel("Occurences")
@@ -612,7 +612,7 @@ def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,base
     ax5=fig.add_subplot(5,2,7)
     ax5.plot(phases,(energies_c_bl-7)*1000,marker='.',linestyle='',c=c)
     ax5.plot(np.sort(phases),(ph_correct_poly1(np.sort(phases))-7)*1000,c='r',linewidth=2, label='Fit')
-    ax5.legend(loc='upper left', prop=dict(size=6))
+    ax5.legend(loc='upper left', prop=dict(size=7))
     ax5.set_title('Before phase correction')
     ax5.set_xlabel('Phase (samples)')
     ax5.set_ylabel('Energy-7000 [eV]')
@@ -642,7 +642,7 @@ def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,base
     ax7.hist(array_to_fit3,bins=bins3,histtype='stepfilled',facecolor=c)
     ax7.plot(axe_fit3,hist_fit3,c='r',linewidth=2, label='Fit : Er={0:5.3f} x {1:5.3f} = {2:5.3f} eV' \
         .format(NONLINEAR_FACTOR, 2.355*coeffs3[2], 2.355*coeffs3[2]*NONLINEAR_FACTOR))
-    ax7.legend(loc='upper left', prop=dict(size=6))
+    ax7.legend(loc='upper left', prop=dict(size=7))
     ax7.set_title('Energy resolution after baseline and phase corrections '+tes_text)
     ax7.set_xlabel("Error [eV]")
     ax7.set_ylabel("Occurences")
@@ -707,7 +707,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     print("Final resolution without TES noise (after phase correction): {0:5.3f}+-{1:5.3f}eV".format(eres_notesnoise,eres_notesnoise/(np.sqrt(2.*len(energies)))))
 
     if do_plots:
-        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_NO_TES_NOISE.pdf')
+        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_NO_TES_NOISE.png')
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise)',plotfilename)
@@ -737,7 +737,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     print("Final resolution with TES noise (after phase correction): {0:5.3f}+-{1:5.3f}eV".format(eres_tesnoise,eres_tesnoise/(np.sqrt(2.*len(energies)))))
         
     if do_plots:
-        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_WITH_TES_NOISE.pdf')
+        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_WITH_TES_NOISE.png')
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'b','(with TES noise)',plotfilename)

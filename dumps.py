@@ -760,14 +760,9 @@ def process_dump_pulses_iq(fulldirname, config):
 
         pulse_length = 1024
         pix = 40 # test pixel
-        modulus = modulus[pulse_length:-pulse_length] # Only consider the center of the dumb to have a full pulse
-        imax = np.where(modulus[:,pix]==modulus[:,pix].min())[0][0]
-        ideb = min(0, imax - int(pulse_length/4))
-        ifin = max(npts, imax + pulse_length)
-        if (ideb==0):
-            ifin=ideb+int(pulse_length/4)
-        if (ifin==npts):
-            ideb=npts-int(pulse_length/4)
+        imax = np.where(modulus[pulse_length:-pulse_length,pix]==modulus[pulse_length:-pulse_length,pix].min())[0][0]
+        ideb = pulse_length + imax - int(pulse_length/4)
+        ifin = ideb + pulse_length
 
         # Making plots
         fig = plt.figure(figsize=(8, 8))
