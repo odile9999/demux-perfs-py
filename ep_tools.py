@@ -167,13 +167,12 @@ def do_pulse_jitter(opt_filter,pulse_record):
         - opt_filter: optimal filter
         - pulse_record: data_stream to analyze
     '''
-    phase_offset = 0 
+    phase_offset = 5 
     pulse_length = len(opt_filter)
     while True:
         energy1 = np.dot(opt_filter,pulse_record[phase_offset:phase_offset+pulse_length])
         energy2 = np.dot(opt_filter,pulse_record[phase_offset+1:phase_offset+pulse_length+1])
         energy3 = np.dot(opt_filter,pulse_record[phase_offset+2:phase_offset+pulse_length+2])
-        #print(energy1, energy2, energy3)
         A = 0.5*(energy1-2*energy2+energy3)
         B = 0.5*(energy3-energy1)
         C = energy2
@@ -533,7 +532,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
             item.set_fontsize(6)
 
         fig.tight_layout()
-        plt.savefig(os.path.join(plotdirname,'PLOT_templates.pdf'),bbox_inches='tight')
+        plt.savefig(os.path.join(plotdirname,'PLOT_templates.png'),bbox_inches='tight')
 
     return(optimal_filter, optimal_filter_tot)
 
