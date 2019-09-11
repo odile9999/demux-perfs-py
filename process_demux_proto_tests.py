@@ -6,13 +6,11 @@ import dumps_dds
 import energy_resol
 import baseline
 import os
-
-# ---------------------------------------------------------------------------
-export_events_npy = False # if True the event list is exported as a npy file
+import ep_tools
 
 # ---------------------------------------------------------------------------
 def process_demux_proto_tests(dirname):
-    config = general_tools.get_csv("demux_tools_cfg.csv")
+    config = general_tools.get_csv('demux_tools_cfg.csv')
 
     fulldirname = os.path.join(os.path.normcase(config['path_tests']), dirname)
 
@@ -47,13 +45,7 @@ def process_demux_proto_tests(dirname):
     dumps.process_dump_pulses_adc_dac(fulldirname, config, 'IN-BIA_PULSE', zoom_factor=50)
     dumps.process_dump_pulses_adc_dac(fulldirname, config, 'IN-FBK_PULSE', zoom_factor=50)
     dumps.process_dump_pulses_iq(fulldirname, config)
-    _, _, _ = energy_resol.meas_energy_r(fulldirname, config, pix=40, export_npy_files=export_events_npy)
 
-    if export_events_npy:
-        energy_resol.make_npy(fulldirname, config, pix=40)
-        energy_resol.check_npy_files(fulldirname, config)
-
-    # To debug Open loop mode -> to be removed
-    #test_OL.test_OL(fulldirname, config)
+    ep_tools.ep(fulldirname, config)
 
 # ---------------------------------------------------------------------------

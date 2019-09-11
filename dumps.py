@@ -605,8 +605,8 @@ def process_dump_pulses_adc_dac(fulldirname, config, dump_type, zoom_factor=20):
         data, _ = get_data.readfile(dumpfilename)
 
         channel=int(data[0, 1]/2**12)
-        a=data[1:,0]
-        b=data[1:,1]
+        a=data[1:,0].astype('int32')
+        b=data[1:,1].astype('int32')
 
         ppa=a.max()-a.min()
         ppb=b.max()-b.min()
@@ -764,6 +764,10 @@ def process_dump_pulses_iq(fulldirname, config):
         imax = np.where(modulus[:,pix]==modulus[:,pix].min())[0][0]
         ideb = min(0, imax - int(pulse_length/4))
         ifin = max(npts, imax + pulse_length)
+        if (ideb==0):
+            ifin=ideb+int(pulse_length/4)
+        if (ifin==npts):
+            ideb=npts-int(pulse_length/4)
 
         # Making plots
         fig = plt.figure(figsize=(8, 8))
