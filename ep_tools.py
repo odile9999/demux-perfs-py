@@ -1,7 +1,8 @@
 '''
 Created on 26 juil. 2019
-
 @author: philippepeille
+
+Updated on 3 Sept. 2019 by Laurent Ravera to match the DRE processing environnement
 '''
 import os
 import numpy as np
@@ -170,6 +171,10 @@ def do_pulse_jitter(opt_filter,pulse_record):
     phase_offset = 5 
     pulse_length = len(opt_filter)
     while True:
+        if phase_offset<0 or phase_offset+pulse_length>len(pulse_record):
+            print('Problem to find the phase of the pulse!')
+            energy=-1
+            break
         energy1 = np.dot(opt_filter,pulse_record[phase_offset:phase_offset+pulse_length])
         energy2 = np.dot(opt_filter,pulse_record[phase_offset+1:phase_offset+pulse_length+1])
         energy3 = np.dot(opt_filter,pulse_record[phase_offset+2:phase_offset+pulse_length+2])
@@ -297,11 +302,11 @@ def energy_reconstruction(pulse_list,optimal_filter,prebuffer=PREBUFF,prebuff_ex
     for i_pulse in range (len(pulse_list)):
         # Perform reconstruction with jitter
         e,p = do_pulse_jitter(optimal_filter, pulse_list[i_pulse])
-        energies.append(e)
-        phases.append(p)
-        
-        # Estimate baseline
-        baselines.append(pulse_list[i_pulse][:prebuffer-prebuff_exclusion].mean())
+        if e!=-1:  # an optimal phase has been found
+            energies.append(e)
+            phases.append(p)
+            # Estimate baseline
+            baselines.append(pulse_list[i_pulse][:prebuffer-prebuff_exclusion].mean())
              
     energies = np.array(energies)
     phases = np.array(phases)
@@ -542,8 +547,14 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
 # ############################################################
 def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
         array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
-        array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,c,tes_text,plotfilename):
+        array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,c,tes_text,plotfilename,file_measures):
     fig = plt.figure(figsize=(8, 14))
+
+    # defining a text to indicate the data set on the resolution plot
+    file_measures_split=file_measures.split('/')
+    if len(file_measures_split)==1:
+        file_measures_split=file_measures.split('\\')
+    txt_dirname='Data: '+file_measures_split[-1]
     
     # Show initial energy error
     ax1=fig.add_subplot(5, 1, 1)
@@ -638,7 +649,7 @@ def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,base
 
     # Show energy error after phase correction
     ax7=fig.add_subplot(5, 1, 5)
-    ax7.hist(array_to_fit3,bins=bins3,histtype='stepfilled',facecolor=c)
+    ax7.hist(array_to_fit3,bins=bins3,histtype='stepfilled',facecolor=c, label=txt_dirname)
     ax7.plot(axe_fit3,hist_fit3,c='r',linewidth=2, label='Fit : Er={0:5.3f} x {1:5.3f} = {2:5.3f} eV' \
         .format(NONLINEAR_FACTOR, 2.355*coeffs3[2], 2.355*coeffs3[2]*NONLINEAR_FACTOR))
     ax7.legend(loc='upper left', prop=dict(size=7))
@@ -709,7 +720,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
         plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_NO_TES_NOISE.png')
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
-            array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise)',plotfilename)
+            array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise)',plotfilename,file_measures)
 
 
     # ############################################################
@@ -739,7 +750,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
         plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_WITH_TES_NOISE.png')
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
-            array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'b','(with TES noise)',plotfilename)
+            array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'b','(with TES noise)',plotfilename,file_measures)
 
     # np.save('energies.npy', energies)
 
