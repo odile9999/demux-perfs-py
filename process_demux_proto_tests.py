@@ -41,14 +41,17 @@ def process_demux_proto_tests(dirname):
 
     # -----------------------------------------------------------------------
     # Checking delock behaviour
-    dumps.process_dump_delock_iq(fulldirname, config)
+    dumps.process_dump_delock_iq(fulldirname, config, "IQ-ALL_Manual_Delock")
+    dumps.process_dump_delock_iq(fulldirname, config, "IQ-ALL_Pulse_Delock")
 
     # -----------------------------------------------------------------------
-    # Processing "Energy resolution characterization"
+    # Checking pulse generator behaviour
     dumps.process_dump_pulses_adc_dac(fulldirname, config, 'IN-BIA_PULSE', zoom_factor=50)
     dumps.process_dump_pulses_adc_dac(fulldirname, config, 'IN-FBK_PULSE', zoom_factor=50)
     dumps.process_dump_pulses_iq(fulldirname, config)
 
+    # -----------------------------------------------------------------------
+    # Measuring energy resolution
     ep_tools.ep(fulldirname, config)
 
 # ---------------------------------------------------------------------------

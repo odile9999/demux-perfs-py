@@ -1322,8 +1322,7 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
     return(sptdb)
 
 # -----------------------------------------------------------------------
-
-def process_dump_delock_iq(fulldirname, config):
+def process_dump_delock_iq(fulldirname, config, delock_type):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
         IQ signal while pulses.
@@ -1352,7 +1351,7 @@ def process_dump_delock_iq(fulldirname, config):
     dumpfilenames = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat'\
-                and f[f_type_deb:f_type_fin]=="IQ-ALL_Manual_Delock"]
+                and f[f_type_deb:f_type_fin]==delock_type]
 
     if len(dumpfilenames)>0:
         dumpfilename = os.path.join(datadirname, dumpfilenames[0])
