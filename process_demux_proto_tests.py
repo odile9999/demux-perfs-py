@@ -41,8 +41,8 @@ def process_demux_proto_tests(dirname):
 
     # -----------------------------------------------------------------------
     # Checking delock behaviour
-    dumps.process_dump_delock_iq(fulldirname, config, "IQ-ALL_Manual_Delock")
-    dumps.process_dump_delock_iq(fulldirname, config, "IQ-ALL_Pulse_Delock")
+    dumps.process_dump_delock_iq(fulldirname, config, "NL_anti-Delock-OFF")
+    dumps.process_dump_delock_iq(fulldirname, config, "NL_anti-Delock--ON")
 
     # -----------------------------------------------------------------------
     # Checking pulse generator behaviour
