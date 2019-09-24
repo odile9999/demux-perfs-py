@@ -1349,7 +1349,7 @@ def process_dump_delock_iq(fulldirname, config, delock_type):
     pix=40 # Index of test pixel
 
     f_type_deb, f_type_fin = -22, -4
-
+				
     dumpfilenames = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
                 and f[-4:]=='.dat'\
@@ -1363,7 +1363,7 @@ def process_dump_delock_iq(fulldirname, config, delock_type):
         chi, chq, _, _, flag_error = get_data.read_iq(dumpfilename)
 
         modulus = np.sqrt(chi.astype('float')**2 + chq.astype('float')**2)
-        npts = len(modulus[0])
+        npts = len(modulus)
 
         t = np.arange(npts)/fs
 
@@ -1374,7 +1374,7 @@ def process_dump_delock_iq(fulldirname, config, delock_type):
 
         ymin, ymax = -1*2**(16-1), 2**(16-1)
         ax1 = fig.add_subplot(2, 1, 1)
-        ax1.plot(t*1e3, modulus[:, :])
+        ax1.plot(t*1e3, modulus)
         ax1.set_ylim(ymin, ymax)
         ax1.set_title("All pixels")
         ax1.set_ylabel("Modulus")
