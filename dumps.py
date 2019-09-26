@@ -45,17 +45,17 @@ def process_dump(fulldirname, config, max_duration=0.2):
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
     general_tools.checkdir(plotdirname)
 
-    nba, name_a = 12, "INPT" # INPUT signal over 12 bits
+    nbc, name_c = 16, "BIAS" # INPUT signal over 12 bits
     nbb, name_b = 16, "FBCK" # FEEDBACK signal over 16 bits
-    nbc, name_c = 16, "BIAS" # BIAS signal over 16 bits
+    nba, name_a = 12, "INPT" # BIAS signal over 16 bits
 
     f_type_deb = 21
     dumpfilenames1 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[f_type_deb:]=="IN-FBK.dat"]
+                and f[f_type_deb:]=="BI-FBK.dat"]
     dumpfilenames2 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[f_type_deb:]=="IN-BIA.dat"]
+                and f[f_type_deb:]=="NL--IN.dat"]
 
     if len(dumpfilenames1)>0 and len(dumpfilenames2)>0:
         dumpfilename1 = os.path.join(datadirname, dumpfilenames1[0])
@@ -70,9 +70,9 @@ def process_dump(fulldirname, config, max_duration=0.2):
         data2, _ = get_data.readfile(dumpfilename2)
 
         channel=int(data1[0, 1]/2**12)
-        a=data1[1:,0]
+        c=data1[1:,0]
         b=data1[1:,1]
-        c=data2[1:,1]
+        a=data2[1:,1]
     
         nval=len(a)
         duration = (nval/fs)
@@ -1368,11 +1368,11 @@ def process_dump_delock_iq(fulldirname, config, delock_type):
         t = np.arange(npts)/fs
 
         # Making plots
-        fig = plt.figure(figsize=(8, 12))
+        fig = plt.figure(figsize=(8, 8))
         io_str="File: "+dumpfilenames[0]
         fig.text(0.1, 0.982, io_str, family='monospace')
 
-        ymin, ymax = -1*2**(16-1), 2**(16-1)
+        ymin, ymax = 0, 2**(16-1)
         ax1 = fig.add_subplot(2, 1, 1)
         ax1.plot(t*1e3, modulus)
         ax1.set_ylim(ymin, ymax)
@@ -1389,6 +1389,51 @@ def process_dump_delock_iq(fulldirname, config, delock_type):
 
         fig.tight_layout()
         #plt.show()
+        plt.savefig(plotfilename, bbox_inches='tight')
+
+# -----------------------------------------------------------------------
+def process_dump_nl(fulldirname, config):
+
+    fs = float(config["fs"])
+    datadirname = os.path.join(fulldirname, config['dir_data'])
+    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    general_tools.checkdir(plotdirname)
+
+    f_type_deb = -13
+
+    dumpfilenames = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[f_type_deb:]=="_NL-carac.dat"]
+
+    if len(dumpfilenames)>0:
+        print("Checking non linear module from file: ", dumpfilenames[0])
+        dumpfilename = os.path.join(datadirname, dumpfilenames[0])
+        plotfilename = os.path.join(plotdirname, "PLOT_DUMP_NL-MODULE.png")
+
+        npts = 2**8
+        # Getting the data from dump file
+        data, _ = get_data.readfile(dumpfilename)
+
+        after=data[1:,0]
+        before=data[1:,1]
+
+        # Looking for pulse
+        index=np.where(before==before.max())[0][0]
+        index_min=max(0, index-npts)
+        index_max=min(len(before)-1, index+npts)
+
+        fig = plt.figure(figsize=(8, 8))
+        range_min, range_max = -2**11, 2**11
+        ax1 = fig.add_subplot(1, 1, 1)
+        ax1.plot(before[index_min+1:index_max+1], after[index_min:index_max], '.')
+        ax1.plot([-2**11, 2**11], [-2**11, 2**11], '-k', linewidth=0.5)
+        ax1.set_xlim(range_min, range_max)
+        ax1.set_ylim(range_min, range_max)
+        ax1.set_title("Non linear module characteristic")
+        ax1.set_xlabel("Input signal before NL module")
+        ax1.set_ylabel("Input signal after NL module")
+
+        fig.tight_layout()
         plt.savefig(plotfilename, bbox_inches='tight')
 
 # -----------------------------------------------------------------------

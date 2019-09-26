@@ -22,7 +22,7 @@ def process_demux_proto_tests(dirname):
     # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
     dumps.process_dump(fulldirname, config, max_duration=1.0)
-    dumps_dds.process_dump_dds(fulldirname, config, max_duration=1.0)
+    #dumps_dds.process_dump_dds(fulldirname, config, max_duration=1.0)
 
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
@@ -41,6 +41,7 @@ def process_demux_proto_tests(dirname):
 
     # -----------------------------------------------------------------------
     # Checking delock behaviour
+    dumps.process_dump_nl(fulldirname, config)
     dumps.process_dump_delock_iq(fulldirname, config, "NL_anti-Delock-OFF")
     dumps.process_dump_delock_iq(fulldirname, config, "NL_anti-Delock--ON")
 
