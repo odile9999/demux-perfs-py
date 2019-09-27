@@ -1155,8 +1155,8 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
         Parameters
         ----------
         fulldirname : string
-        The name of the directory containing the data files
-        
+        The path to the session data
+       
         config: dictionnary
         contains usefull parameters
         
@@ -1330,7 +1330,7 @@ def process_dump_delock_iq(fulldirname, config, delock_type):
         Parameters
         ----------
         fulldirname : string
-        The name of the dump file (with the path)
+        The path to the session data
 
         config : dictionnary
         Contains path and constants definitions
@@ -1393,47 +1393,97 @@ def process_dump_delock_iq(fulldirname, config, delock_type):
 
 # -----------------------------------------------------------------------
 def process_dump_nl(fulldirname, config):
+    r"""
+        This function plots the characteristic of the non-linear module.
+        
+        Parameters
+        ----------
+        fulldirname : string
+        The path to the session data
 
-    fs = float(config["fs"])
+        config: dictionnary
+        contains usefull parameters
+
+        Returns
+        -------
+        Nothing
+
+        """
+
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
     general_tools.checkdir(plotdirname)
 
-    f_type_deb = -13
-
+    f_type_deb = -22
     dumpfilenames = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[f_type_deb:]=="_NL-carac.dat"]
+                and f[f_type_deb:]=="_NL-carac_nodelock.dat"]
 
     if len(dumpfilenames)>0:
         print("Checking non linear module from file: ", dumpfilenames[0])
         dumpfilename = os.path.join(datadirname, dumpfilenames[0])
-        plotfilename = os.path.join(plotdirname, "PLOT_DUMP_NL-MODULE.png")
+        plotfilename = os.path.join(plotdirname, "PLOT_DUMP_NL-MODULE_NO-DELOCK.png")
+        title = "Non linear module characteristic (at delock limit)"
+        plot_nl_module(dumpfilename, plotfilename, title)
 
-        npts = 2**8
-        # Getting the data from dump file
-        data, _ = get_data.readfile(dumpfilename)
 
-        after=data[2:,1]
-        before=data[1:-1,0] # Shift by 1 clock cycle to compensate address => data delay
+    f_type_deb = -20
+    dumpfilenames = [f for f in os.listdir(datadirname) \
+                if os.path.isfile(os.path.join(datadirname, f)) \
+                and f[f_type_deb:]=="_NL-carac_delock.dat"]
 
-        # Looking for pulse
-        index=np.where(before==before.max())[0][0]
-        index_min=max(0, index-npts)
-        index_max=min(len(before), index+npts)
+    if len(dumpfilenames)>0:
+        print("Checking non linear module from file: ", dumpfilenames[0])
+        dumpfilename = os.path.join(datadirname, dumpfilenames[0])
+        plotfilename = os.path.join(plotdirname, "PLOT_DUMP_NL-MODULE_DELOCK.png")
+        title = "Non linear module characteristic (with delock)"
+        plot_nl_module(dumpfilename, plotfilename, title)
 
-        fig = plt.figure(figsize=(8, 8))
-        range_min, range_max = -2**11, 2**11
-        ax1 = fig.add_subplot(1, 1, 1)
-        ax1.plot(before[index_min:index_max], after[index_min:index_max], '.')
-        ax1.plot([-2**11, 2**11], [-2**11, 2**11], '-k', linewidth=0.5)
-        ax1.set_xlim(range_min, range_max)
-        ax1.set_ylim(range_min, range_max)
-        ax1.set_title("Non linear module characteristic")
-        ax1.set_xlabel("Input signal before NL module")
-        ax1.set_ylabel("Input signal after NL module")
+# -----------------------------------------------------------------------
+def plot_nl_module(dumpfilename, plotfilename, title):
+    r"""
+        This function plots the characteristic of the non-linear module.
+        
+        Parameters
+        ----------
+        dumpfilename : string
+        The name of the dump file (with the path)
 
-        fig.tight_layout()
-        plt.savefig(plotfilename, bbox_inches='tight')
+        title : string
+        Title for the plot
+
+        plotfilename : string
+        The name of the plotfile (with the pa)
+
+        Returns
+        -------
+        Nothing
+
+        """
+    npts = 2**8
+    # Getting the data from dump file
+    data, _ = get_data.readfile(dumpfilename)
+
+    after=data[2:,1]
+    before=data[1:-1,0] # Shift by 1 clock cycle to compensate address => data delay
+
+    # Looking for pulse
+    index=np.where(before==before.max())[0][0]
+    index_min=max(0, index-npts)
+    index_max=min(len(before), index+npts)
+
+    fig = plt.figure(figsize=(8, 8))
+    range_min, range_max = -2**11, 2**11
+    ax1 = fig.add_subplot(1, 1, 1)
+    ax1.plot(before[index_min:index_max], after[index_min:index_max], '.')
+    ax1.plot([-2**11, 2**11], [-2**11, 2**11], '-k', linewidth=0.5)
+    ax1.set_xlim(range_min, range_max)
+    ax1.set_ylim(range_min, range_max)
+    ax1.set_title(title)
+    ax1.set_xlabel("Input signal before NL module")
+    ax1.set_ylabel("Input signal after NL module")
+
+    fig.tight_layout()
+    plt.savefig(plotfilename, bbox_inches='tight')
 
 # -----------------------------------------------------------------------
