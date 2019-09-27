@@ -1414,18 +1414,18 @@ def process_dump_nl(fulldirname, config):
         # Getting the data from dump file
         data, _ = get_data.readfile(dumpfilename)
 
-        after=data[1:,1]
-        before=data[1:,0]
+        after=data[2:,1]
+        before=data[1:-1,0] # Shift by 1 clock cycle to compensate address => data delay
 
         # Looking for pulse
         index=np.where(before==before.max())[0][0]
         index_min=max(0, index-npts)
-        index_max=min(len(before)-1, index+npts)
+        index_max=min(len(before), index+npts)
 
         fig = plt.figure(figsize=(8, 8))
         range_min, range_max = -2**11, 2**11
         ax1 = fig.add_subplot(1, 1, 1)
-        ax1.plot(before[index_min+1:index_max+1], after[index_min:index_max], '.')
+        ax1.plot(before[index_min:index_max], after[index_min:index_max], '.')
         ax1.plot([-2**11, 2**11], [-2**11, 2**11], '-k', linewidth=0.5)
         ax1.set_xlim(range_min, range_max)
         ax1.set_ylim(range_min, range_max)
