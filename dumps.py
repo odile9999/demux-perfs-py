@@ -52,10 +52,10 @@ def process_dump(fulldirname, config, max_duration=0.2):
     f_type_deb = 21
     dumpfilenames1 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[f_type_deb:]=="BI-FBK.dat"]
+                and f[f_type_deb:]=="IN-BIA.dat"]
     dumpfilenames2 = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[f_type_deb:]=="NL--IN.dat"]
+                and f[f_type_deb:]=="IN-FBK.dat"]
 
     if len(dumpfilenames1)>0 and len(dumpfilenames2)>0:
         dumpfilename1 = os.path.join(datadirname, dumpfilenames1[0])
@@ -70,9 +70,9 @@ def process_dump(fulldirname, config, max_duration=0.2):
         data2, _ = get_data.readfile(dumpfilename2)
 
         channel=int(data1[0, 1]/2**12)
-        c=data1[1:,0]
-        b=data1[1:,1]
-        a=data2[1:,1]
+        c=data1[1:,1]
+        b=data2[1:,1]
+        a=data1[1:,0]
     
         nval=len(a)
         duration = (nval/fs)
@@ -1414,8 +1414,8 @@ def process_dump_nl(fulldirname, config):
         # Getting the data from dump file
         data, _ = get_data.readfile(dumpfilename)
 
-        after=data[1:,0]
-        before=data[1:,1]
+        after=data[1:,1]
+        before=data[1:,0]
 
         # Looking for pulse
         index=np.where(before==before.max())[0][0]
