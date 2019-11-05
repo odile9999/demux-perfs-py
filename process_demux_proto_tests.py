@@ -20,20 +20,20 @@ def process_demux_proto_tests(dirname):
         hk_tools.plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True)
  
     # -----------------------------------------------------------------------
+    # Processing "Carriers spectra characterization"
+    tst_pix=40 # test pixel index
+    spt, pix_pos=dumps.process_iq_multi(fulldirname, config, pix_zoom=tst_pix)
+    dumps.process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True)
+
+    # -----------------------------------------------------------------------
     # Processing "BIAS, FEEDBAC and INPUT" dump files 
-    dumps.process_dump(fulldirname, config, max_duration=1.0)
-    #dumps_dds.process_dump_dds(fulldirname, config, max_duration=1.0)
+    dumps.process_dump(fulldirname, config, max_duration=1.0, pix_id=pix_pos)
+    dumps_dds.process_dump_dds(fulldirname, config, max_duration=1.0)
 
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
     channel=0
     gbw.process_gbw(fulldirname, config, channel)
-
-    # -----------------------------------------------------------------------
-    # Processing "Carriers spectra characterization"
-    tst_pix=40 # test pixel index
-    dumps.process_iq_multi(fulldirname, config, pix_zoom=tst_pix)
-    dumps.process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True)
 
     # -----------------------------------------------------------------------
     # Checking baseline level

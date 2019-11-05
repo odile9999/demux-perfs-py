@@ -19,7 +19,7 @@ def analyse_dump(sig, nb, config):
     return(sigfdb, f_carriers, io_str)
  
 # -----------------------------------------------------------------------------
-def process_dump(fulldirname, config, max_duration=0.2):
+def process_dump(fulldirname, config, max_duration=0.2, pix_id=0):
     r"""
         This function reads and process the data of DRE-DEMUX data dumps.
 
@@ -33,6 +33,9 @@ def process_dump(fulldirname, config, max_duration=0.2):
 
         Max_duration : number, optional
         Maximum duration in seconds to be considered for analysis (default is 1)
+
+        pix_id : number
+        AC-carrier position for the zoom.
 
         Returns
         -------
@@ -130,7 +133,7 @@ def process_dump(fulldirname, config, max_duration=0.2):
         print("Processing datastream of BIAS signal...")
         cfdb, f_carriers, io_str = analyse_dump(c, nbc, config)
         if (len(cfdb)>0):
-            plot_dump(c, nbc, cfdb, f_carriers, config, "Signal "+name_c+plot_str, plotfilename_c)
+            plot_dump(c, nbc, cfdb, f_carriers, config, "Signal "+name_c+plot_str, plotfilename_c, pix_id)
             io_str = '\
     == Measurements on data stream ' + name_c + '\n\
     =============================================================================\n' + io_str
@@ -141,7 +144,7 @@ def process_dump(fulldirname, config, max_duration=0.2):
         print("Processing datastream of INPUT signal...")
         afdb, _, io_str = analyse_dump(a, nba, config)
         if (len(afdb)>0):
-            plot_dump(a, nba, afdb, f_carriers, config, "Signal "+name_a+plot_str, plotfilename_a)
+            plot_dump(a, nba, afdb, f_carriers, config, "Signal "+name_a+plot_str, plotfilename_a, pix_id)
             io_str = '\
     == Measurements on data stream ' + name_a + '\n\
     =============================================================================\n' + io_str
@@ -152,7 +155,7 @@ def process_dump(fulldirname, config, max_duration=0.2):
         print("Processing datastream of FEEDBACK signal...")
         bfdb, _, io_str = analyse_dump(b, nbb, config)
         if (len(bfdb)>0):
-            plot_dump(b, nbb, bfdb, f_carriers, config, "Signal "+name_b+plot_str, plotfilename_b)
+            plot_dump(b, nbb, bfdb, f_carriers, config, "Signal "+name_b+plot_str, plotfilename_b, pix_id)
             io_str = '\
     == Measurements on data stream ' + name_b + '\n\
     =============================================================================\n' + io_str
@@ -166,7 +169,6 @@ def process_dump(fulldirname, config, max_duration=0.2):
     print("------------------------------------")
 
 # -----------------------------------------------------------------------------
-
 def makeanalysis(sig, nb, config):
     r"""
         This function does the analysis of a signal. In time domain (measurment
@@ -266,7 +268,7 @@ Noise power around carriers-> (dBFS / 2 x Binfo)\n\
 
 
 # -----------------------------------------------------------------------------
-def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
+def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename, pix_id=0):
     r"""
         This function plots a signal in time and frequency domain.
 
@@ -293,6 +295,9 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
         plotfilename : string
         name of the plotfile.
 
+        pix_id : number
+        AC-carrier position for the zoom.
+
         Returns
         -------
         Nothing
@@ -300,10 +305,9 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
     """
 
     ncar=len(f_car)
-    pix_id = 0
     fs = config["fs"]
     f_res = (fs/2)/len(sigfdb) # frequency resolution
-    i_car = int(f_car[pix_id] / f_res) # position of the 1st carrier in the frequency vector
+    i_car = int(f_car[pix_id] / f_res) # position of one specific carrier in the frequency vector
 
     cf = crestfactor(sig-sig.mean())
     moyenne = sig.mean()
@@ -370,7 +374,7 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
 
     ax4 = fig.add_subplot(3, 2, 4)
     ax4.plot(f / 1e6, sigfdb, 'b', linewidth=1)
-    ax4.plot(f / 1e6, sigfdb, '.r')
+    ax4.plot(f / 1e6, sigfdb, '.', color='orange')
     if nb==16:
         ax4.plot([0, f[-1]], [all_sines_rms_level, all_sines_rms_level], '--g', linewidth=1.5)
         ax4.plot([0, f[-1]], [noise_req, noise_req], '--k', linewidth=1.5)
@@ -394,33 +398,37 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
 
     # Plotting spuriouses for the BIAS signal
     spur_max_accu = 0
-    if plotfilename[-8:-4]=="BIAS":
+    if plotfilename[-8:-4]=="BIAS" or plotfilename[-8:-4]=="FBCK":
         # mean behaviour for all the pixels
         for f in f_car:
             i_f = int(f / f_res)            
-            i_spurs_left = spurdetect(sigfdb[i_f-npts:i_f])
-            i_spurs_right = spurdetect(sigfdb[i_f:i_f+npts])
+            i_spurs_left, _ = spurdetect(sigfdb[i_f-npts:i_f], 1)
+            i_spurs_right, _ = spurdetect(sigfdb[i_f:i_f+npts], 1)
             if (len(i_spurs_left)+len(i_spurs_right))>0:
                 spur_max_accu += sigfdb[i_f]-np.concatenate((sigfdb[i_f-npts+i_spurs_left], sigfdb[i_f+i_spurs_right])).max()
         spur_max_mean = spur_max_accu / ncar
 
         # For a specific pixel
-        i_spurs = spurdetect(sigfdb[i_car:i_car+npts])
+        i_spurs, i_spur_max = spurdetect(sigfdb[i_car:i_car+npts], 3)
         n_spurs = len(i_spurs)
         #spurs_mean = (sigfdb[i_car+i_spurs]-sigfdb[i_car]).mean()
+        ax5.set_title("Pixel {0:2d}".format(pix_id))
         if n_spurs>0:
-            i_spur_max = np.where(sigfdb[i_car+i_spurs] == sigfdb[i_car+i_spurs].max())
-            f_spur_max = f_shift[i_car+i_spurs[i_spur_max]]
-            spur_max = sigfdb[i_car+i_spurs[i_spur_max]]
-            spur_max_text = '{0:5.1f}dBc'.format((spur_max-sigfdb[i_car])[0])
+            ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs],'.', color='orange')
+
+            # highlighting few strongest spuriouses
+            n_sp=min(3, len(i_spur_max))
+            ax5.semilogx(f_shift[i_car+i_spur_max[:n_sp]], sigfdb[i_car+i_spur_max[:n_sp]],'.',color='r')
+            for i_sp in range(n_sp):
+                sp_text="{0:4.1f}".format(sigfdb[i_car] - sigfdb[i_car+i_spur_max[i_sp]])
+                ax5.text(f_shift[i_car+i_spur_max[i_sp]]*0.99, sigfdb[i_car+i_spur_max[0]]+(1+i_sp)*10, sp_text)
+
+            f_spur_max = f_shift[i_car+i_spur_max[0]]
             general_spur_text = '{0:2d} spurious detected in the plot range,\n'.format(n_spurs) \
                 +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                    .format(f_spur_max[0], (spur_max-sigfdb[i_car])[0]) \
+                    .format(f_spur_max, sigfdb[i_car] - sigfdb[i_car+i_spur_max[i_sp]]) \
                 +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
-            ax5.text(f_spur_max, spur_max+5, spur_max_text, horizontalalignment='center', color='red')
-            ax5.text(3, -75, general_spur_text)
-            ax5.semilogx(f_spur_max, spur_max, '*', color='red')
-        ax5.semilogx(f_shift[i_car+i_spurs], sigfdb[i_car+i_spurs],'o', color='orange')
+            ax5.text(2, -55, general_spur_text)
 
     fig.tight_layout()
     #plt.show()
@@ -428,7 +436,7 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename):
     print('Plots done')
 
 # -----------------------------------------------------------------------------
-def spurdetect(sig, margin=6):
+def spurdetect(sig, nb, margin=6):
     r"""
         This function detects spuriouses in a 1D signal. A threshold is used
         to define the spurious level.
@@ -438,6 +446,9 @@ def spurdetect(sig, margin=6):
         ----------
         sig : array_like
         The signal in which peaks will be detected
+
+        nb : number
+        number of greatest spurious to be measured
 
         margin : number
         The minimum spurious level. 
@@ -451,7 +462,18 @@ def spurdetect(sig, margin=6):
 
     delta1 = sig - np.concatenate((sig[1:], [sig[-1]]))
     delta2 = sig - np.concatenate(([sig[0]], sig[:-1]))
-    return(np.intersect1d(np.where(delta1 > margin)[0], np.where(delta2 > margin)[0]))
+
+    i_spurs=np.intersect1d(np.where(delta1 > margin)[0], np.where(delta2 > margin)[0])
+
+    i_spur_max=np.array(()).astype(int)
+    sigcopy=sig.copy()            
+
+    nb=min(nb, len(i_spurs))
+    for n in range(nb):
+        i_spur_max = np.append(i_spur_max, np.where(sigcopy == sigcopy[i_spurs].max())[0][0])
+        sigcopy[i_spur_max[-1]]=-np.inf
+
+    return(i_spurs, i_spur_max)
 
 # -----------------------------------------------------------------------------
 def peakdetect(sig, margin=6):
@@ -859,7 +881,8 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
 
         Returns
         -------
-        Nothing           
+        pix_on : array_like
+        booleans (indicates which pixels are on)           
         """
 
     npts = len(sptdb[0,:])
@@ -879,7 +902,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     # measurement of spurious for all pixels
     spur_max_accu = 0
     for car in range(ncar):
-        i_spurs = spurdetect(sptdb[car,:], 3)
+        i_spurs, _ = spurdetect(sptdb[car,:], 3, 6)
         if len(i_spurs >0):
             spur_max_accu += sptdb[car, 0]-(sptdb[car, i_spurs]).max()
     spur_max_mean = spur_max_accu / ncar
@@ -888,12 +911,16 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(1, 1, 1)
     ax.semilogx(f[1:], sptdb[pix_zoom,1:])
-    i_spurs = spurdetect(sptdb[pix_zoom,:], 3)
+    i_spurs, i_spur_max = spurdetect(sptdb[pix_zoom,:], 3, 6)
     n_spurs = len(i_spurs)
-    i_spur_max = np.where(sptdb[pix_zoom,:] == sptdb[pix_zoom,i_spurs].max())[0][0]
-    spur_max = sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max]
+    spur_max = sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max[0]]
     ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs],'.',color='orange')
-    ax.semilogx(f[i_spur_max], sptdb[pix_zoom,i_spur_max],'.',color='r')
+    # highlighting few strongest spuriouses
+    n_sp=min(3, len(i_spur_max))
+    ax.semilogx(f[i_spur_max[:n_sp]], sptdb[pix_zoom,i_spur_max[:n_sp]],'.',color='r')
+    for i_sp in range(n_sp):
+        sp_text="{0:4.1f}".format(sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max[i_sp]])
+        ax.text(f[i_spur_max[i_sp]], sptdb[pix_zoom,i_spur_max[i_sp]], sp_text)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
@@ -910,7 +937,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax.set_title(r'Pixel {0:2d}'.format(pix_zoom))
     spur_text = '{0:3d} spurious detected in the plot range,\n'.format(n_spurs) \
             +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                .format(i_spur_max*fres, spur_max) \
+                .format(i_spur_max[0]*fres, spur_max) \
             +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
     ax.text(3, -60, spur_text)
 
@@ -970,6 +997,8 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     fig.tight_layout()
     plt.savefig(pltfilename+suffixe+'_40pix.png', bbox_inches='tight')
 
+    return(pix_on)
+
 # -----------------------------------------------------------------------
 def get_cf_and_fsroverpeakpeak_from_file(fulldirname, quiet=True):
     r"""   
@@ -1018,11 +1047,29 @@ def get_cf_and_fsroverpeakpeak_from_file(fulldirname, quiet=True):
 
 # -----------------------------------------------------------------------
 def win(window, npts):
+    r"""
+        This function returns a window (to be applied before the computation of a FFT).
+
+        Parameters
+        ----------
+        window: boolean
+        If true the window is blackman type else it is square type
+
+        npts: integer
+        length of the window 
+
+        Returns
+        ------- 
+        win: array containing the window
+
+       """
+
     if window:
         win = np.blackman(npts)
     else:
         win = 1
     return(win)
+
 
 # -----------------------------------------------------------------------
 def process_iq_multi(fulldirname, config, pix_zoom=40, window=False, bw_correction=True):
@@ -1140,11 +1187,13 @@ def process_iq_multi(fulldirname, config, pix_zoom=40, window=False, bw_correcti
             # Normalisation to a RBW of 1Hz
             if bw_correction:
                 spt0db[:,1:] += bw_correction_factor_db
-            plot_spectra(spt0db, config, pltfilename, cf0, fsr_over_peakpeak0, '', bw_correction_factor_db, pix_zoom)
+            pix_on=plot_spectra(spt0db, config, pltfilename, cf0, fsr_over_peakpeak0, '', bw_correction_factor_db, pix_zoom)
+            pix_pos=int(np.where(pix_on==False)[0][0])
     else:
         spt0db=0
+        pix_pos=0
         
-    return(spt0db)
+    return(spt0db, pix_pos)
 
 # -----------------------------------------------------------------------
 def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
@@ -1262,6 +1311,8 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
 
             npts = len(sptdb)
             f=np.arange(npts)*fs/(2*npts)
+            fres=(fs/2)/npts
+
             impact_2_dacs = 3    # Because the test set-up involves two DACs (bias and feedback)
             impact_non_stationarity = 20*np.log10(1.4) # Because our test set-up does not reproduce the TES non-stationarity 
             impact_bbfb = 3  # BBFB adds 3 dB noise (TBC)
@@ -1274,6 +1325,17 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
             fig = plt.figure(figsize=(12, 8))
             ax = fig.add_subplot(1, 1, 1)
             ax.semilogx(f[1:], sptdb[1:])
+            i_spurs, i_spur_max = spurdetect(sptdb, 4, 10)
+            n_spurs = len(i_spurs)
+            ax.semilogx(f[i_spurs], sptdb[i_spurs],'.',color='orange')            
+
+            # highlighting few strongest spuriouses
+            n_sp=min(4, len(i_spur_max))
+            ax.semilogx(f[i_spur_max[:n_sp]], sptdb[i_spur_max[:n_sp]],'.',color='r')
+            for i_sp in range(n_sp):
+                sp_text="{0:4.1f}".format(sptdb[0] - sptdb[i_spur_max[i_sp]])
+                ax.text(f[i_spur_max[i_sp]], sptdb[i_spur_max[i_sp]], sp_text)
+
             ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
             ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
             ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
@@ -1281,10 +1343,15 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
             ax.text(40, -17, r'band of interest', fontsize=11)
             ax.text(sc_band_min, snr_pix_min-5, r'DRD requirement level', fontsize=11)
             ax.text(1.5, -179, bw_res_warn, fontsize=11)
-            L1, L2=100, 2.5
+            L1, L2=2.5*sc_band_max/10, 2.5*sc_band_min/10
             ax.arrow(sc_band_min, -20, sc_band_max-L1, 0, head_width=3, head_length=L1, fc='k', ec='k')
             ax.arrow(sc_band_max, -20, -sc_band_max+sc_band_min+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
-            #ax.axis([1, f[-1], -180, 0])
+            ax.axis([1, f[-1], -180, 0])
+            spur_text = 'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                        .format(i_spur_max[0]*fres, sptdb[i_spur_max[0]])+\
+                        '2nd strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                        .format(i_spur_max[1]*fres, sptdb[i_spur_max[1]])                                        
+            ax.text(3, -60, spur_text)
             ax.set_ylim(-180, 0)
             ax.set_xlim(1, f[-1])
             ax.set_xlabel(r'Frequency (Hz)')
