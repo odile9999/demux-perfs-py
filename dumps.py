@@ -409,7 +409,7 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename, pix_id=0):
         spur_max_mean = spur_max_accu / ncar
 
         # For a specific pixel
-        i_spurs, i_spur_max = spurdetect(sigfdb[i_car:i_car+npts], 3)
+        i_spurs, i_spur_max = spurdetect(sigfdb[i_car:i_car+npts], 9)
         n_spurs = len(i_spurs)
         #spurs_mean = (sigfdb[i_car+i_spurs]-sigfdb[i_car]).mean()
         ax5.set_title("Pixel {0:2d}".format(pix_id))
@@ -426,7 +426,7 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename, pix_id=0):
             f_spur_max = f_shift[i_car+i_spur_max[0]]
             general_spur_text = '{0:2d} spurious detected in the plot range,\n'.format(n_spurs) \
                 +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                    .format(f_spur_max, sigfdb[i_car] - sigfdb[i_car+i_spur_max[i_sp]]) \
+                    .format(f_spur_max, sigfdb[i_car] - sigfdb[i_car+i_spur_max[0]]) \
                 +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
             ax5.text(2, -55, general_spur_text)
 
@@ -964,6 +964,7 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
             item.set_fontsize(15)
     fig.tight_layout()
     plt.savefig(pltfilename+suffixe+'_zoom'+str(pix_zoom)+'.png', bbox_inches='tight')
+
 
     # Plot for all other pixels (but the test pixels)
     n_boxes=40 
