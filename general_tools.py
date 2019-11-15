@@ -11,13 +11,6 @@
 
     General purpose tools needed for the DRE data processing
 
-    Routine listing
-    ===============
-    get_csv()
-    print_conf()
-    get_session_info()
-    print_session_info()
-
     """
 
 # -----------------------------------------------------------------------
@@ -64,27 +57,30 @@ def get_csv(filename):
 
     dictionnary={}
 
-    if not os.path.exists(filename):
+    if not os.path.exists(os.path.join(filename)):
         print("File "+filename+" not found.")
     else:
         with open(filename, newline='') as csvfile:
-            dict_reader = csv.reader(csvfile, delimiter=';', quotechar='|')
+            dict_reader = csv.reader(csvfile, delimiter='=', quotechar='|')
             for row in dict_reader:
                 try:    # for numbers
                     dictionnary[row[0]]=float(row[1].replace(',','.'))
                 except: # for strings
-                    dictionnary[row[0]]=row[1].replace(',','.')
+                    dictionnary[row[0]]=row[1]
     return(dictionnary)
 
 # -----------------------------------------------------------------------
-def print_conf(config):
+def print_dict(the_dict, the_dictname):
     r"""
-        This function prints the parameters of a configuration set.
-        (path, ...).
+        This function prints a set of parameter values from a dictionnary .
 
         Parameters:
         ----------
-        config: Dictionnary
+        dict: dictionnary
+        Contains the parameters
+
+        dictname: string
+        Name of the dictionnary (used to prompt the user)
 
         Returns
         -------
@@ -92,63 +88,12 @@ def print_conf(config):
 
         """
 
-    print('The configuration parameters are the following:')
-    for key in config.keys():
-        print(key, ': ', config[key])    
+    print('The ', the_dictname, ' parameters are the following:')
+    for key in the_dict.keys():
+        print('  ', key, ': ', the_dict[key])    
     return()
 
 # -----------------------------------------------------------------------
-
-def get_session_info(fulldirname):
-    r"""
-        This function reads the session informations from a text file.
-
-        Parameters:
-        -----------
-        fulldirname: string
-        Name of the directory containing the text file
-
-        Returns
-        -------
-        dictionnary: dictionnary
-
-        """
-
-    dict_info={}
-    filename=os.path.join(fulldirname, 'session_informations.txt')
-
-    if not os.path.exists(filename):
-        print("Session information file not found.")
-    else:
-        fich = open(filename, "r")
-        for line in fich:
-            if '=' in line: # this is a parameter definition line
-                dict_info[line.split('=')[0]]=line.split('=')[1]
-
-    return(dict_info)
-
-# -----------------------------------------------------------------------
-def print_session_info(session_info):
-    r"""
-        This function prints the content of the session information dictionnary.
-
-        Parameters:
-        ----------
-        session_info: Dictionnary
-
-        Returns
-        -------
-        Nothing
-
-        """
-
-    print('The session informations are the following:')
-    for key in session_info.keys():
-        print(key, ': ', session_info[key])
-    return()
-    
-# -----------------------------------------------------------------------
-
 def non_empty_lines(table):
     r"""
         This function looks for empty lines in an 2 dimensionnal array.

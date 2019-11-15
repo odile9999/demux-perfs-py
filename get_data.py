@@ -86,7 +86,6 @@ def readfile(dumpfilename, quiet=True):
 
     return(data, dumptype)
 
-
 # -----------------------------------------------------------------------------
 def read_iq(filename):
     r"""
@@ -133,7 +132,6 @@ def read_iq(filename):
     flag_error = check_data(dada_ch0, dada_ch1, chan0_id, chan1_id)
 
     return(chan0_i, chan0_q, chan1_i, chan1_q, flag_error)
-
 
 # -----------------------------------------------------------------------------
 def check_data(dada_ch0, dada_ch1, chan0_id, chan1_id):
@@ -221,34 +219,4 @@ def read_events(eventsfilename, backup_version):
         fdat.close()
         return(event_list[:]['timestamp'], event_list[:]['channelId'], event_list[:]['pixelId'], event_list[:]['energy'], event_list[:]['offset'])
     
-# -----------------------------------------------------------------------------
-
-def read_spectrum(eventsfilename):
-    r"""
-        This function reads binary spectrum files
-
-        Parameters
-        ----------
-        spectrumfilename : string
-        The name of the dump file (with the path and the extension)
-
-        Returns
-        -------
-        energy : array
-        Hystogram (eV)
-
-        count : array
-        Hystogram count (count)
-
-        """
-    
-    fdat=open(eventsfilename, 'rb')
-    dt=np.dtype([('energy', np.float32), \
-                 ('count', np.int32)])
-                                  
-    hystogram=np.fromfile(fdat, dtype=dt)
-    fdat.close()
-    
-    return(hystogram[:]['energy'], hystogram[:]['count'])
-
 # -----------------------------------------------------------------------------
