@@ -67,23 +67,48 @@ def get_nonlinear_factor(dirname, verbose=False):
 # ############################################################
 # Function to create pulse average
 # ############################################################
-def pulse_average(pulse_list,ignore_outlayers=False):
-    """Creates pulse template from a set of pulses. Outlayers can be manually rejected.
+def pulse_average(pulse_list,remove_outlayers=True):
+    """Creates pulse template from a set of pulses. Outlayers can be rejected.
     
     Arguments:
-        - pulse_list: 
+        - pulse_list:
+        - remove_outlayers: if True outlayers are rejected
         
     Returns: pulse_template 
         - pulse_template: template created from the average of detected pulses
+        - pulse_list: pulse list cleaned from the outlayers
+    """
+    
+    # Compute the average of the detected pulses and reject 1% worst if requested
+    pulse_list = np.array(pulse_list)
+    if remove_outlayers:
+        mean_pulse = np.mean(pulse_list,0)
+        diff_list = np.sum(abs(pulse_list-mean_pulse),1)
+        pulse_list = pulse_list[(diff_list<np.percentile(diff_list,99))]
+            
+    return mean_pulse, pulse_list
+
+
+# ############################################################
+# Function to create pulse average
+# ############################################################
+def pulse_average_old(pulse_list,remove_outlayers=False):
+    """Creates pulse template from a set of pulses. Outlayers can be rejected.
+    
+    Arguments:
+        - pulse_list:
+        - remove_outlayers: if True outlayers are rejected
+        
+    Returns: pulse_template 
+        - pulse_template: template created from the average of detected pulses
+        - pulse_list: pulse list cleaned from the outlayers
     """
     satisfied=False
     
     # Iteratively compute the average of the detected pulses and reject 10% worst if requested
     pulse_list = np.array(pulse_list)
-    while not satisfied:
+    while remove_outlayers and not satisfied:
         mean_pulse = np.mean(pulse_list,0)
-        if ignore_outlayers:
-            break
         diff_list = np.sum(abs(pulse_list-mean_pulse),1)
         plt.clf()
         plt.plot(mean_pulse,label='Averaged pulse')
@@ -97,7 +122,7 @@ def pulse_average(pulse_list,ignore_outlayers=False):
         else:
             satisfied=True
             
-    return mean_pulse
+    return mean_pulse, pulse_list
 
 
 # ############################################################
@@ -367,8 +392,8 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
     delta=len(pulse_list[0])-record_length
     pulse_list=pulse_list[:, int(delta/2):record_length+int(delta/2)] # pulse records are longuer than noise records (by 2)
 
-    # Generate pulse template as average of detected pulses
-    pulse_template = pulse_average(pulse_list,ignore_outlayers=True)
+    # Generate pulse template as average of detected pulses (and removing outlayers)
+    pulse_template, pulse_list = pulse_average(pulse_list,remove_outlayers=True)
     if verbose:
         print("  Pulse template: ",pulse_template)
 
@@ -697,6 +722,9 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     print("  Loading measured pulse data from file ", file_measures)
     _, _, pulse_list, _=get_records_from_fits(file_measures, verbose=verbose)
     print("  Record length = {0:4d}".format(len(pulse_list[0])))
+
+    # Removing outlayers
+    _, pulse_list = pulse_average(pulse_list,remove_outlayers=True)
         
     # Compute first energy estimates
     energies,phases,baselines = energy_reconstruction(pulse_list, optimal_filter, PREBUFF, JITTER_MARGIN)
