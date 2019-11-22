@@ -702,7 +702,7 @@ def plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,base
 # ############################################################
 # Pulse reconstruction
 # ############################################################
-def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, plotdirname, verbose=False, do_plots=True):
+def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, plotdirname, index, verbose=False, do_plots=True):
     """Perform the operations to measure the energy resolution (with and without tes noise).
     
     Arguments:
@@ -711,6 +711,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
         - optimal_filter_tot: optimal filter computed with the TES noise
         - pixeldirname: directory containing pixel's informations
         - plotdirname: location of plotfiles
+        - index: to be included in the plot filename 
         - verbose: if True some informations are printed (Default=False)
         - do_plots: if True a plot is done with all the intermediate results (Default=True)
         
@@ -751,7 +752,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     print("Final resolution without TES noise (after phase correction): {0:5.3f}+-{1:5.3f}eV".format(eres_notesnoise,eres_notesnoise/(np.sqrt(2.*len(energies)))))
 
     if do_plots:
-        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_NO_TES_NOISE.png')
+        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_NO_TES_NOISE_{0:d}.png'.format(index))
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise,{0:6d} counts)',plotfilename,file_measures)
@@ -781,7 +782,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     print("Final resolution with TES noise (after phase correction): {0:5.3f}+-{1:5.3f}eV".format(eres_tesnoise,eres_tesnoise/(np.sqrt(2.*len(energies)))))
         
     if do_plots:
-        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_WITH_TES_NOISE.png')
+        plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_WITH_TES_NOISE_{0:d}.png'.format(index))
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'b','(with TES noise,{0:6d} counts)'.format(len(energies)),plotfilename,file_measures)
@@ -825,9 +826,12 @@ def ep(fulldirname, config, verbose=False):
         print("No file available for EP processing")
 
     # Measuring energies
-    if EP_filter_exist and len(list_file_measures)==1:
-        file_measures=os.path.join(datadirname, list_file_measures[0])
-        measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, plotdirname, verbose)
+    if EP_filter_exist:
+        index=0
+        for file_measures_name in list_file_measures:
+            file_measures_fullname=os.path.join(datadirname, file_measures_name)
+            measure_er(file_measures_fullname, optimal_filter, optimal_filter_tot, pixeldirname, plotdirname, index, verbose)
+            index+=1
 
 # ############################################################
 
