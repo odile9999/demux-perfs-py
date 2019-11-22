@@ -788,6 +788,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'b','(with TES noise,{0:6d} counts)'.format(len(energies)),plotfilename,file_measures)
 
     # np.save('energies.npy', energies)
+    return(eres_tesnoise, eres_tesnoise/(np.sqrt(2.*len(energies))))
 
 
 # ############################################################
@@ -827,11 +828,16 @@ def ep(fulldirname, config, verbose=False):
 
     # Measuring energies
     if EP_filter_exist:
+        summary_file_name=os.path.join(plotdirname, "er_results.csv")
+        summary_file=open(summary_file_name, "w")
+        summary_file.write("Energy resolution (with TES noise);Error;Unit;\n")
         index=0
         for file_measures_name in list_file_measures:
             file_measures_fullname=os.path.join(datadirname, file_measures_name)
-            measure_er(file_measures_fullname, optimal_filter, optimal_filter_tot, pixeldirname, plotdirname, index, verbose)
+            eres, eres_error=measure_er(file_measures_fullname, optimal_filter, optimal_filter_tot, pixeldirname, plotdirname, index, verbose)
+            summary_file.write("{0:6.4f};{1:6.4f};eV;\n".format(eres,eres_error))
             index+=1
+        summary_file.close()
 
 # ############################################################
 
