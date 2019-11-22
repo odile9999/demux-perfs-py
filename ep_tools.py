@@ -483,6 +483,8 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax3.plot(dre_template[decal:1000+decal],label='dre')
         ax3.plot(xifusim_template_decimated*baseline_scaling - dre_template[decal:1000+decal],label='difference')
         ax3.set_title('Direct difference between both templates')
+        ax3.set_xlabel('Sample number')
+        ax3.set_ylabel('Module (ADU)')
         ax3.legend(loc="best", prop=dict(size=7))
         for item in ([ax3.title]):
             item.set_weight('bold')
@@ -495,8 +497,9 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         # Relative difference
         ax4=fig.add_subplot(4,2,4)
         ax4.plot((xifusim_template_decimated*baseline_scaling - dre_template[decal:1000+decal])/dre_template[decal:1000+decal]*100,label='difference')
-        ax4.set_ylabel('Relative difference [%]')
         ax4.set_title('Relative difference between both templates')
+        ax4.set_xlabel('Sample number')
+        ax4.set_ylabel('Relative difference [%]')
         for item in ([ax4.title]):
             item.set_weight('bold')
             item.set_fontsize(8)
@@ -509,9 +512,9 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax5=fig.add_subplot(4,2,5)
         ax5.loglog(PS_freq,xifusim_PS,label="xifusim")
         ax5.loglog(PS_freq,DRE_PS,label="dre")
+        ax5.set_title('Comparison of Pulses power spectra')
         ax5.set_xlabel("Frequency [Hz]")
         ax5.set_ylabel("PSD [AU]")
-        ax5.set_title('Comparison of power spectra')
         ax5.legend(loc="best", prop=dict(size=7))
         for item in ([ax5.title]):
             item.set_weight('bold')
@@ -526,8 +529,9 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax6.loglog(frequencies,tes_noise[1:int(record_length/2)],label="TES noise")
         ax6.loglog(frequencies,noise_spectrum[1:int(record_length/2)],label="DAC noise")
         ax6.loglog(frequencies,total_noise[1:int(record_length/2)],label="Total noise")
-        ax6.set_title('Average noise spectrum')
         ax6.set_title("DAC noise vs TES noise")
+        ax6.set_xlabel("Frequency [Hz]")
+        ax6.set_ylabel("PSD [AU]")
         ax6.legend(loc="best", prop=dict(size=7))
         for item in ([ax6.title]):
             item.set_weight('bold')
@@ -541,6 +545,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax7=fig.add_subplot(4,2,7)
         ax7.plot(optimal_filter_tot)
         ax7.set_title('Optimal filter')
+        ax7.set_xlabel('Sample number')
         for item in ([ax7.title]):
             item.set_weight('bold')
             item.set_fontsize(8)
@@ -553,6 +558,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
         ax8=fig.add_subplot(4,2,8)
         ax8.plot(optimal_filter_tot)
         ax8.set_title('Optimal filter including TES noise')
+        ax8.set_xlabel('Sample number')
         for item in ([ax8.title]):
             item.set_weight('bold')
             item.set_fontsize(8)
