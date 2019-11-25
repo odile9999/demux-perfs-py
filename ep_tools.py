@@ -841,6 +841,7 @@ def ep(fulldirname, config, verbose=False):
             eres_list.append(eres)
             summary_file.write(";{0:6.4f};{1:6.4f};eV;\n".format(eres,eres_error))
             index+=1
+        summary_file.write("Mean value;{0:6.4f};;eV;\n".format(np.array(eres_list).mean()))
         if index>1:
             summary_file.write("Standard dev.;{0:6.4f};;eV;\n".format(np.array(eres_list).std()))
         summary_file.close()
