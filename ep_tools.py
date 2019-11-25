@@ -826,17 +826,23 @@ def ep(fulldirname, config, verbose=False):
     else:
         print("No file available for EP processing")
 
+    print("Youhou4")
     # Measuring energies
     if EP_filter_exist:
         summary_file_name=os.path.join(plotdirname, "er_results.csv")
         summary_file=open(summary_file_name, "w")
-        summary_file.write("Energy resolution (with TES noise);Error;Unit;\n")
+        summary_file.write("Cession;"+"To be done;"+"\n")
+        summary_file.write(";Energy resolution (with TES noise);Error;Unit;\n")
         index=0
+        eres_list=[]
         for file_measures_name in list_file_measures:
             file_measures_fullname=os.path.join(datadirname, file_measures_name)
             eres, eres_error=measure_er(file_measures_fullname, optimal_filter, optimal_filter_tot, pixeldirname, plotdirname, index, verbose)
-            summary_file.write("{0:6.4f};{1:6.4f};eV;\n".format(eres,eres_error))
+            eres_list.append(eres)
+            summary_file.write(";{0:6.4f};{1:6.4f};eV;\n".format(eres,eres_error))
             index+=1
+        if index>1:
+            summary_file.write("Standard dev.;{0:6.4f};;eV;\n".format(np.array(eres_list).std()))
         summary_file.close()
 
 # ############################################################
