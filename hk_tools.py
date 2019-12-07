@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 # -----------------------------------------------------------------------
-
 def get_hk(fulldirname, config):
     r"""
         This function gets the hk of the demux prototype from a csv file.
@@ -73,7 +72,6 @@ def get_hk(fulldirname, config):
     return(hk, hk_lims)
 
 # -----------------------------------------------------------------------
-
 def print_hk(hk):
     r"""
         This function prints the hk of the DRE-DEMUX prototype.
@@ -95,7 +93,6 @@ def print_hk(hk):
     return()
 
 # -----------------------------------------------------------------------
-
 def count_valid_hk(hk):
     r"""
         This function counts the number of valid hks in a HK dictionnary.
@@ -119,7 +116,6 @@ def count_valid_hk(hk):
     return(n_valid_hk)
 
 # -----------------------------------------------------------------------
-
 def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True):
     r"""
         This function plots the hk of the DRE-DEMUX prototype.
@@ -137,6 +133,9 @@ def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True):
 
         config: dictionnary
         Contains path and constants definitions
+
+        plt_temp: Boolean
+        If True a dedicated plot is made with the temperature of the DAC
 
         Returns
         -------
@@ -231,8 +230,8 @@ def plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True):
         plt.savefig(pltfilename3, bbox_inches='tight')
 
     return()
-# -----------------------------------------------------------------------
 
+# -----------------------------------------------------------------------
 def datetxt_to_date(datetxt):
     r"""
         This function converts the date string as used by the GSE into a python date.
@@ -246,7 +245,6 @@ def datetxt_to_date(datetxt):
     return(date_test)
 
 # -----------------------------------------------------------------------
-
 def init_hk_lims(hk):
     r"""
         This function initialises the limits of a set of HK.
@@ -282,7 +280,6 @@ def init_hk_lims(hk):
     return(default_hk_lims_list)
 
 # -----------------------------------------------------------------------
-
 def get_hk_lims(fulldirname, config, hk):
     r"""
         This function gets the hk limits from a text file.
@@ -336,8 +333,8 @@ def get_hk_lims(fulldirname, config, hk):
                 fich.close()
 
     return(hk_lims_list)
-# -----------------------------------------------------------------------
 
+# -----------------------------------------------------------------------
 def print_hk_lims(hk_lims_list):
     r"""
         This function prints the hk limits.
@@ -359,4 +356,32 @@ def print_hk_lims(hk_lims_list):
             print(key1)
             for key2 in hk_lims_list[key1].keys():
                 print(key2, ': ', hk_lims_list[key1][key2])
+
+# -----------------------------------------------------------------------
+def check_hk(fulldirname, config, plt_temp=False):
+    r"""
+        This function checks the hk of a test cession.
+
+        Parameters
+        ----------
+        fulldirname: string
+        The name of the dump file (with the path)
+
+        config: dictionnary
+        Contains path and constants definitions
+
+        plt_temp: Boolean
+        If True a dedicated plot is made with the temperature of the DAC
+
+        Returns
+        -------
+        Nothing.
+
+        """
+
+    hk, hk_lims = get_hk(fulldirname, config)
+    if hk != 0:
+        plot_hk(hk, hk_lims, fulldirname, config, plt_temp)
+    return(hk!=0)
+
 # -----------------------------------------------------------------------

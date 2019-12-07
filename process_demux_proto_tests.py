@@ -19,20 +19,16 @@ def process_demux_proto_tests(dirname, verbose=False):
     session_info = general_tools.get_csv(os.path.join(fulldirname, config['session_info']))
 
     if verbose:
-        general_tools.print_dict(session_info, 'demux')
+        general_tools.print_dict(config, 'demux')
         general_tools.print_dict(session_info, 'session')
 
     # -----------------------------------------------------------------------
     # Processing of hk files 
-    hk, hk_lims = hk_tools.get_hk(fulldirname, config)
-    if hk != 0:
-        hk_tools.plot_hk(hk, hk_lims, fulldirname, config, plt_temp=True)
+    _=hk_tools.check_hk(fulldirname, config, plt_temp=True)
  
     # -----------------------------------------------------------------------
     # Processing scan feedback data 
-    sfb_dat = scan_feedback_tools.get_scanfb(fulldirname, config)
-    if sfb_dat !=0:
-        scan_feedback_tools.plot_scanfb(sfb_dat, fulldirname, config)
+    _=scan_feedback_tools.check_scanfb(fulldirname, config)
 
     # -----------------------------------------------------------------------
     # Processing "Carriers spectra characterization"

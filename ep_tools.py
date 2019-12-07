@@ -755,7 +755,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
         plotfilename=os.path.join(plotdirname,'PLOT_E_RESOL_NO_TES_NOISE_{0:d}.png'.format(index))
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
-            array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise,{0:6d} counts)',plotfilename,file_measures)
+            array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise,{0:6d} counts)'.format(len(energies)),plotfilename,file_measures)
 
 
     # ############################################################
@@ -826,7 +826,6 @@ def ep(fulldirname, config, verbose=False):
     else:
         print("No file available for EP processing")
 
-    print("Youhou4")
     # Measuring energies
     if EP_filter_exist:
         summary_file_name=os.path.join(plotdirname, "er_results.csv")
