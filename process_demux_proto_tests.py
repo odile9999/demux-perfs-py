@@ -11,6 +11,12 @@ import scan_feedback_tools
 # ---------------------------------------------------------------------------
 def process_demux_proto_tests(dirname, verbose=False):
 
+    test_report={
+        'scanfb_ok': False,
+        'gbwp_ok':False,
+        'eres_ok':False
+        }
+
     # -----------------------------------------------------------------------
     # Reading demux and session informations 
     config = general_tools.get_csv('demux_tools_cfg.csv')
@@ -28,7 +34,7 @@ def process_demux_proto_tests(dirname, verbose=False):
  
     # -----------------------------------------------------------------------
     # Processing scan feedback data 
-    _=scan_feedback_tools.check_scanfb(fulldirname, config)
+    test_report['scanfb_ok']=scan_feedback_tools.check_scanfb(fulldirname, config)
 
     # -----------------------------------------------------------------------
     # Processing "Carriers spectra characterization"
@@ -44,7 +50,7 @@ def process_demux_proto_tests(dirname, verbose=False):
     # -----------------------------------------------------------------------
     # Processing "Gain bandwidth characterization" 
     channel=0
-    gbw.process_gbw(fulldirname, config, channel)
+    test_report['gbwp_ok']=gbw.process_gbw(fulldirname, config, channel)
 
     # -----------------------------------------------------------------------
     # Checking baseline level
@@ -64,6 +70,10 @@ def process_demux_proto_tests(dirname, verbose=False):
 
     # -----------------------------------------------------------------------
     # Measuring energy resolution
-    ep_tools.ep(fulldirname, config)
+    test_report['eres_ok']=ep_tools.ep(fulldirname, config)
+
+    # -----------------------------------------------------------------------
+    # writing test report
+    general_tools.save_test_report(fulldirname, config, test_report)
 
 # ---------------------------------------------------------------------------

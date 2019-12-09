@@ -793,6 +793,22 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
 
 # ############################################################
 def ep(fulldirname, config, verbose=False):
+    """Perform the operations to measure the energy resolution (with and without tes noise).
+    
+    Arguments:
+        fulldirname: string
+        The name of the directory containing the data files
+
+        config: dictionnary
+        Contains path and constants definitions
+
+        verbose: boolean
+        If True some informations are printed (Default=False)
+
+    Returns:
+        eres_ok: boolean
+        True if DRE energy resolution contribution is below the requirement       
+    """
 
     datadirname = os.path.join(fulldirname, config['dir_data'])
     plotdirname = os.path.join(fulldirname, config['dir_plots'])
@@ -840,10 +856,13 @@ def ep(fulldirname, config, verbose=False):
             eres_list.append(eres)
             summary_file.write(";{0:6.4f};{1:6.4f};eV;\n".format(eres,eres_error))
             index+=1
-        summary_file.write("Mean value;{0:6.4f};;eV;\n".format(np.array(eres_list).mean()))
+        eres_mean=np.array(eres_list).mean()
+        summary_file.write("Mean value;{0:6.4f};;eV;\n".format(eres_mean))
         if index>1:
             summary_file.write("Standard dev.;{0:6.4f};;eV;\n".format(np.array(eres_list).std()))
         summary_file.close()
+
+    return(eres_mean<config['eres_req_cbe_dre_7kev'])
 
 # ############################################################
 

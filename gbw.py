@@ -146,29 +146,30 @@ def get_gbw_freq_and_amp(datadirname, dumptype, chan):
     return(f, amplitudes, gain_dre)
                     
 # -----------------------------------------------------------------------
-def process_gbw(fulldirname, config, chan):
+def process_gbw(fulldirname, config, chan, margin_pc=5):
     r"""
         This function reads data from several DRE IQ data files
         to compute the Gain BadWidth product (GBW).
         
         Parameters
         ----------
-        fulldirname : string
+        fulldirname: string
         The name of the directory containing the data files
 
-        config : dictionnary
+        config: dictionnary
         Contains path and constants definitions
 
-        chan : number
+        chan: number
         Specifies the channel to be processed (0 or 1)
+    
+        margin_pc: number
+        Acceptable margin, as a percentage, on the value of the GBWP (default is 5) 
 
         Returns
         ------- 
-        frequency: array
-        frequencies used for the test
-
-        amplitude:
-        amplitude measured at each frequency 
+        gbwp_ok: boolean
+        True if gain bandwidth product is in the correct range.
+        
         """
     fs = config["fs"]
 
@@ -236,6 +237,8 @@ def process_gbw(fulldirname, config, chan):
     else:
         f=a_db=0
 
-    return(f, a_db)
+    gbwp_ok = (gbw>=config['GBWP']*(1-margin_pc/100)) and (gbw<=config['GBWP']*(1+margin_pc/100))
+
+    return(gbwp_ok)
 
 # -----------------------------------------------------------------------

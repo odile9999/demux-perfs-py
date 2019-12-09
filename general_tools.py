@@ -106,4 +106,43 @@ def non_empty_lines(table):
     return(non_empty_lines)
 
 # ---------------------------------------------------------------------------
+def save_test_report(fulldirname, config, test_report):
+    """Perform the operations to measure the energy resolution (with and without tes noise).
+    
+    Arguments:
+        fulldirname: string
+        The name of the directory containing the data files
 
+        config: dictionnary
+        Contains path and constants definitions
+
+        test_report: dictionnary
+        Contains the results of the different tests
+
+    Returns:
+        Nothing
+    """
+
+    plotdirname = os.path.join(fulldirname, config['dir_plots'])
+    checkdir(plotdirname)
+
+    report_file_name=os.path.join(plotdirname, "report_summary.txt")
+    report_file=open(report_file_name, "w")
+
+    if test_report['scanfb_ok']:
+        report_file.write('Scan feedback: -----------> OK\n')
+    else:
+        report_file.write('Scan feedback: ----------->>> Not OK\n')
+
+    if test_report['gbwp_ok']:
+        report_file.write('Gain bandwidth product: --> OK\n')
+    else:
+        report_file.write('Gain bandwidth product: -->>> Not OK\n')
+
+    if test_report['eres_ok']:
+        report_file.write('Energy resolution: -------> OK\n')
+    else:
+        report_file.write('Energy resolution: ------->>> Not OK\n')
+
+
+# ---------------------------------------------------------------------------
