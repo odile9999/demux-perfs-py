@@ -190,6 +190,7 @@ def process_gbw(fulldirname, config, chan, margin_pc=5):
         fit = fit_tools.low_pass(f_high_res, fit_params[0], fit_params[1])
         fit_db = 20*np.log10(fit/fit.max())
         gbw = 1./fit_params[1]
+        gbwp_ok = (gbw>=config['GBWP']*(1-margin_pc/100)) and (gbw<=config['GBWP']*(1+margin_pc/100))
 
         min_amp_db, max_amp_db = -80, 10
         gbw_min, gbw_max = 13e3, 17e3
@@ -236,8 +237,7 @@ def process_gbw(fulldirname, config, chan, margin_pc=5):
         plt.savefig(pltfilename, bbox_inches='tight')
     else:
         f=a_db=0
-
-    gbwp_ok = (gbw>=config['GBWP']*(1-margin_pc/100)) and (gbw<=config['GBWP']*(1+margin_pc/100))
+        gbwp_ok=False
 
     return(gbwp_ok)
 

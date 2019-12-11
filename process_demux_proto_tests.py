@@ -12,7 +12,7 @@ import scan_feedback_tools
 def process_demux_proto_tests(dirname, verbose=False):
 
     test_report={
-        'scanfb_ok': False,
+        'scanfb_ok':False,
         'gbwp_ok':False,
         'eres_ok':False
         }
