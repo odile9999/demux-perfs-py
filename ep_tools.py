@@ -20,6 +20,37 @@ JITTER_MARGIN=10
 # ############################################################
 # Function to read data records from fits files
 # ############################################################
+def get_testpix_module_from_iqfits(filename, slice_length=2048, verbose=False):
+    '''Reads i/q data from a fits file
+
+    Arguments:
+        - filename: name of the file containing the sample records
+        - verbose: option to print the nonlinear factor
+
+    Returns: an arrays containing I and Q for the test pixel and t
+    '''
+
+    hdul = fits.open(filename)
+    data=hdul[1].data
+    time_stamp=hdul[1].header['HIERARCH DRE_TIMESTAMP']
+    i=data['I40']
+    q=data['Q40']
+    module=np.sqrt(i.astype("float")**2+q.astype("float")**2)
+    n_samples=len(module)
+    n_slices=int(n_samples/slice_length)
+    module=np.resize(module,(n_slices, slice_length))
+    if verbose:
+        print("  Informations of FITS file:")
+        print("    Date:    ", hdul[1].header['DATE'])
+        print("    Origin:  ", hdul[1].header['ORIGIN'])
+        print("    Project: ", hdul[1].header['INSTRUME'])
+        print("    Number of samples: ", len(n_samples))
+    
+    return(module, time_stamp)
+
+# ############################################################
+# Function to read data records from fits files
+# ############################################################
 def get_records_from_fits(filename, verbose=False):
     '''Reads sample records from a fits file
 
@@ -367,9 +398,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
 
     # Load pulse-free data to generate noise spectrum
     print("  Loading noise data from file ", file_noise)
-    _, pix, module_n, _ = get_records_from_fits(file_noise, verbose=verbose)
-    i_pixtest = np.where(pix==40)[0] # keeping only records from test pixel
-    noise_data = module_n[i_pixtest] 
+    noise_data, _ = get_testpix_module_from_iqfits(file_noise, verbose=verbose)
     record_length=len(noise_data[0])
     print("  Record length = {0:4d}".format(record_length))
         
