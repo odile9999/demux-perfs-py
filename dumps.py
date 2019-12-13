@@ -212,6 +212,9 @@ def makeanalysis(sig, nb, config):
     # Get the peak-to-peak amplitude of the time signal.
     peakpeak = 2.*max(abs(sig))
 
+    # Get the crest factor of the signal.
+    cf, _ = crestfactor(sig)
+
     # FSR power level (constant signal equal to DAC at full scale)
     e_fsr_db = 10*np.log10(nval*(2**nb)**2)
 
@@ -228,7 +231,7 @@ def makeanalysis(sig, nb, config):
 Peak Peak amplitude--------------> {0:9.2f} \n\
 Measured crest factor------------> {1:9.2f} \n\
 Max of spectrum------------------> {2:9.2f} dB\n'\
-    .format(peakpeak, crestfactor(sig), sigfdb.max())
+    .format(peakpeak, cf, sigfdb.max())
 
     ##### Noise power measurement around each carriers
     fcarriers=np.array([])
@@ -309,13 +312,15 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename, pix_id=0):
     f_res = (fs/2)/len(sigfdb) # frequency resolution
     i_car = int(f_car[pix_id] / f_res) # position of one specific carrier in the frequency vector
 
-    cf = crestfactor(sig-sig.mean())
+    cf, period = crestfactor(sig, verbose=False)
     moyenne = sig.mean()
     moyenne_dbfs = 20*np.log10(2**nb/np.abs(moyenne))
     peakpeak = 2.*abs(sig).max()
     fsr_over_peakpeak = 2**nb/peakpeak
-    io_str2 = '\n Crest factor = {0:5.2f}    FSR_DAC/PeakPeak = {1:6.2f}\n Mean = {2:5.2f} = {3:5.2f} dBFS'\
+    io_str2 = '\n Crest factor: {0:5.2f}   FSR_DAC/PeakPeak: {1:6.2f}\n Mean: {2:5.2f} = {3:5.2f} dBFS'\
         .format(cf, fsr_over_peakpeak, moyenne, moyenne_dbfs)
+    if period!=len(sig):
+        io_str2+='  Period: {0:5d} samples = {1:6.2f} ms'.format(period, 1000.*period/fs)
 
     f = np.linspace(0, fs/2, len(sigfdb))
     L1 = 1024         # length of time plot (long)
@@ -343,7 +348,7 @@ def plot_dump(sig, nb, sigfdb, f_car, config, io_str, plotfilename, pix_id=0):
     t = np.arange(len(sig))/fs
     ax1 = fig.add_subplot(3, 2, 1)
     ax1.plot(1000*t[0:L1], sig[0:L1], 'b')
-    ax1.text(0, 2**(nb-1)*0.75, io_str2, color='b')
+    ax1.text(0, 2**(nb-1)*0.81, io_str2, color='b', fontsize=8)
     ax1.set_ylabel(ytimetitle)
     ax1.set_xlabel('Time (ms)')
     ax1.grid(color='k', linestyle=':', linewidth=0.5)
@@ -515,7 +520,7 @@ def peakdetect(sig, margin=6):
     return(ithreshold[i])
 
 # -----------------------------------------------------------------------------
-def crestfactor(signal):
+def crestfactor(signal, verbose=False):
     r"""
         This function computes the crest factor (cf) of a signal.
 
@@ -527,10 +532,15 @@ def crestfactor(signal):
         signal : array_like
         an array
 
+        verbose: boolean
+        if True some informations are printed (Default=False)
+
         Returns
         -------
         cf : number
         The crest factor computed using cf = Peak / rms
+    
+        period : the period of the signal (0 if not periodic)
 
         Example
         -------
@@ -538,8 +548,16 @@ def crestfactor(signal):
         0.651887905613
 
         """
-    peak = abs(signal).max()
-    return(peak / signal.std())
+
+    # searching for signal periodicity
+    period=search_period(signal, verbose=verbose)
+
+    peak = abs(signal[:period]).max()
+    cf=peak / signal[:period].std()
+    if verbose:
+        print("The crest factor is {0:6.4f}".format(cf))
+
+    return(cf, period)
 
 # -----------------------------------------------------------------------------
 def noiseandspurpower(sigf, indexes, df, config):
@@ -1016,14 +1034,14 @@ def get_cf_and_fsroverpeakpeak_from_file(fulldirname, quiet=True):
     dumpfilenames = [f for f in os.listdir(fulldirname) \
             if os.path.isfile(os.path.join(fulldirname, f)) \
             and f[-4:]=='.dat'\
-            and f[f_type_deb:f_type_fin]=="IN-BIA"]
+            and f[f_type_deb:f_type_fin]=="IN-FBK"]
 
     if len(dumpfilenames)>0:
         filename = os.path.join(fulldirname, dumpfilenames[0])
 
         data, _ = get_data.readfile(filename)
         feedback = data[1:,1].astype(float)
-        cf = crestfactor(feedback)
+        cf,_ = crestfactor(feedback)
         peakpeak = 2.*max(abs(feedback))
         fsr_over_peakpeak = 2.**16/peakpeak
         
@@ -1553,5 +1571,42 @@ def plot_nl_module(dumpfilename, plotfilename, title):
 
     fig.tight_layout()
     plt.savefig(plotfilename, bbox_inches='tight')
+
+# -----------------------------------------------------------------------
+def search_period(sig, verbose=False):
+    r"""
+        This function measures the periodicity of a signal.
+        
+        Parameters
+        ----------
+        sig : array
+        The values to be measured
+
+        verbose: boolean
+        if True some informations are printed (Default=False)
+
+        Returns
+        -------
+        period
+
+        """
+
+    npts=len(sig)
+    period=npts
+    max_pow_two=np.floor(np.log(npts)/np.log(2))
+    pow_two=4
+    while pow_two<npts/2:
+        equal = (abs(sig[:pow_two]-sig[pow_two:pow_two*2]).max()==0)
+        if equal:
+            period=pow_two
+            break
+        pow_two=pow_two*2
+    if verbose:
+        if period==0:
+            print("This signal is not periodic")
+        else:
+            print("The period of the signal is {0:5d} samples".format(period))
+
+    return(period)
 
 # -----------------------------------------------------------------------
