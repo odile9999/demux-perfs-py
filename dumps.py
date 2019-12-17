@@ -458,6 +458,9 @@ def spurdetect(sig, nb, margin=6):
         -------
         detected_spurious_indexes : array_like
         Indexes of detected spurious according to the input array
+
+        maximum spuriouses : array_like
+        Indexes of highest detected spurious according to the input array
         """
 
     delta1 = sig - np.concatenate((sig[1:], [sig[-1]]))
@@ -913,14 +916,23 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax.semilogx(f[1:], sptdb[pix_zoom,1:])
     i_spurs, i_spur_max = spurdetect(sptdb[pix_zoom,:], 3, 6)
     n_spurs = len(i_spurs)
-    spur_max = sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max[0]]
-    ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs],'.',color='orange')
-    # highlighting few strongest spuriouses
-    n_sp=min(3, len(i_spur_max))
-    ax.semilogx(f[i_spur_max[:n_sp]], sptdb[pix_zoom,i_spur_max[:n_sp]],'.',color='r')
-    for i_sp in range(n_sp):
-        sp_text="{0:4.1f}".format(sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max[i_sp]])
-        ax.text(f[i_spur_max[i_sp]], sptdb[pix_zoom,i_spur_max[i_sp]], sp_text)
+    if n_spurs>0:
+        spur_max = sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max[0]]
+        ax.semilogx(f[i_spurs], sptdb[pix_zoom,i_spurs],'.',color='orange')
+        # highlighting few strongest spuriouses
+        n_sp=min(3, len(i_spur_max))
+        ax.semilogx(f[i_spur_max[:n_sp]], sptdb[pix_zoom,i_spur_max[:n_sp]],'.',color='r')
+        for i_sp in range(n_sp):
+            sp_text="{0:4.1f}".format(sptdb[pix_zoom,0] - sptdb[pix_zoom,i_spur_max[i_sp]])
+            ax.text(f[i_spur_max[i_sp]], sptdb[pix_zoom,i_spur_max[i_sp]], sp_text)
+        spur_text = '{0:3d} spurious detected in the plot range,\n'.format(n_spurs) \
+                +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                    .format(i_spur_max[0]*fres, spur_max) \
+                +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean) 
+    else:
+        spur_text = 'No spurious detected in the plot range'        
+
+    ax.text(3, -60, spur_text)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
     ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
@@ -935,11 +947,6 @@ def plot_spectra(sptdb, config, pltfilename, cf, fsr_over_peakpeak, suffixe, bw_
     ax.set_xlabel(r'Frequency (Hz)')
     ax.set_ylabel(r'DRD (dBc.Hz)')
     ax.set_title(r'Pixel {0:2d}'.format(pix_zoom))
-    spur_text = '{0:3d} spurious detected in the plot range,\n'.format(n_spurs) \
-            +'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                .format(i_spur_max[0]*fres, spur_max) \
-            +'Mean of maximum spurious value over the {0:3d} carriers: {1:5.1f}dBc (mean of dB values)'.format(ncar, spur_max_mean)            
-    ax.text(3, -60, spur_text)
 
     # Major ticks every 20, minor ticks every 10
     major_ticks = np.arange(-160, 1, 20)
@@ -1328,15 +1335,25 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
             ax.semilogx(f[1:], sptdb[1:])
             i_spurs, i_spur_max = spurdetect(sptdb, 4, 10)
             n_spurs = len(i_spurs)
-            ax.semilogx(f[i_spurs], sptdb[i_spurs],'.',color='orange')            
+            if n_spurs>0:
+                ax.semilogx(f[i_spurs], sptdb[i_spurs],'.',color='orange')            
 
-            # highlighting few strongest spuriouses
-            n_sp=min(4, len(i_spur_max))
-            ax.semilogx(f[i_spur_max[:n_sp]], sptdb[i_spur_max[:n_sp]],'.',color='r')
-            for i_sp in range(n_sp):
-                sp_text="{0:4.1f}".format(sptdb[0] - sptdb[i_spur_max[i_sp]])
-                ax.text(f[i_spur_max[i_sp]], sptdb[i_spur_max[i_sp]], sp_text)
+                # highlighting few strongest spuriouses
+                n_sp=min(4, len(i_spur_max))
+                ax.semilogx(f[i_spur_max[:n_sp]], sptdb[i_spur_max[:n_sp]],'.',color='r')
+                for i_sp in range(n_sp):
+                    sp_text="{0:4.1f}".format(sptdb[0] - sptdb[i_spur_max[i_sp]])
+                    ax.text(f[i_spur_max[i_sp]], sptdb[i_spur_max[i_sp]], sp_text)
 
+                spur_text = 'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                            .format(i_spur_max[0]*fres, sptdb[i_spur_max[0]])
+                if len(i_spur_max)>1:
+                    spur_text+='2nd strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
+                            .format(i_spur_max[1]*fres, sptdb[i_spur_max[1]])                                        
+            else:
+                spur_text = 'No surious detected in the band of interest'
+
+            ax.text(3, -60, spur_text)
             ax.semilogx([sc_band_min, sc_band_max], [snr_pix_min, snr_pix_min], ':r', linewidth=3)
             ax.semilogx([sc_band_min, sc_band_max], [snr_pix_max, snr_pix_max], ':r', linewidth=3)
             ax.semilogx([sc_band_min, sc_band_min], [snr_pix_min, 0], ':r', linewidth=3)
@@ -1348,11 +1365,6 @@ def process_iq_tst_multi(fulldirname, config, window=False, bw_correction=True):
             ax.arrow(sc_band_min, -20, sc_band_max-L1, 0, head_width=3, head_length=L1, fc='k', ec='k')
             ax.arrow(sc_band_max, -20, -sc_band_max+sc_band_min+L2, 0, head_width=3, head_length=L2, fc='k', ec='k')
             ax.axis([1, f[-1], -180, 0])
-            spur_text = 'Strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                        .format(i_spur_max[0]*fres, sptdb[i_spur_max[0]])+\
-                        '2nd strongest spurious measured at {0:6.0f}Hz from the carrier with an amplitude of {1:5.1f}dBc\n' \
-                        .format(i_spur_max[1]*fres, sptdb[i_spur_max[1]])                                        
-            ax.text(3, -60, spur_text)
             ax.set_ylim(-180, 0)
             ax.set_xlim(1, f[-1])
             ax.set_xlabel(r'Frequency (Hz)')
