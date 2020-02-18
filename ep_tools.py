@@ -818,7 +818,7 @@ def ep(fulldirname, config, verbose=False):
     f_type_deb = 15
     list_file_noise = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
-                and f[f_type_deb:]=="_record.fits"]
+                and f[f_type_deb:]=="_mk_EP_filter_noise_record.fits"]
     f_type_deb = 15
     list_file_measures = [f for f in os.listdir(datadirname) \
                 if os.path.isfile(os.path.join(datadirname, f)) \
