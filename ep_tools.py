@@ -9,7 +9,7 @@ import numpy as np
 import argparse
 import general_tools
 import matplotlib.pyplot as plt
-import general_tools
+import general_tools, dre_fits
 from astropy.io import fits
 from scipy.optimize.minpack import curve_fit
 
@@ -30,54 +30,15 @@ def get_testpix_module_from_iqfits(filename, slice_length=2048, verbose=False):
     Returns: an arrays containing I and Q for the test pixel and t
     '''
 
-    hdul = fits.open(filename)
-    data=hdul[1].data
-    time_stamp=hdul[1].header['HIERARCH DRE_TIMESTAMP']
-    i=data['I40']
-    q=data['Q40']
-    module=np.sqrt(i.astype("float")**2+q.astype("float")**2)
+    i,q=dre_fits.read_iq(filename, verbose)
+    module=np.sqrt(i[:,-1]**2+q[:,-1]**2) # module of test pixel only
     n_samples=len(module)
     n_slices=int(n_samples/slice_length)
     module=np.resize(module,(n_slices, slice_length))
     if verbose:
-        print("  Informations of FITS file:")
-        print("    Date:    ", hdul[1].header['DATE'])
-        print("    Origin:  ", hdul[1].header['ORIGIN'])
-        print("    Project: ", hdul[1].header['INSTRUME'])
         print("    Number of samples: ", len(n_samples))
     
-    return(module, time_stamp)
-
-# ############################################################
-# Function to read data records from fits files
-# ############################################################
-def get_records_from_fits(filename, verbose=False):
-    '''Reads sample records from a fits file
-
-    Arguments:
-        - filename: name of the file containing the sample records
-        - verbose: option to print the nonlinear factor
-
-    Returns: an array containing the records
-    '''
-
-    hdul = fits.open(filename)
-    data=hdul[1].data
-    t=data['Timestamp']
-    chid=data['channelNum']
-    pixid=data['pixelNum']
-    i=data['i']
-    q=data['q']
-    module=np.sqrt(i.astype("float")**2+q.astype("float")**2)
-    if verbose:
-        print("  Informations of FITS file:")
-        print("    Date:    ", hdul[1].header['DATE'])
-        print("    Origin:  ", hdul[1].header['ORIGIN'])
-        print("    Project: ", hdul[1].header['INSTRUME'])
-        print("    Number of records: ", len(i))
-        print("    Length of records: ", int(len(i[0])))
-    
-    return(chid, pixid, module, t)
+    return(module)
     
 # ############################################################
 # Function to get the pixel non linearity factor from its information file
@@ -398,7 +359,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
 
     # Load pulse-free data to generate noise spectrum
     print("  Loading noise data from file ", file_noise)
-    noise_data, _ = get_testpix_module_from_iqfits(file_noise, verbose=verbose)
+    noise_data = get_testpix_module_from_iqfits(file_noise, verbose=verbose)
     record_length=len(noise_data[0])
     print("  Record length = {0:4d}".format(record_length))
         
@@ -416,7 +377,7 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
     
     # Load pulse data to be used for template calibration
     print("  Loading calibration pulse data from file ", file_pulses)
-    _, _, pulse_list, pulse_times=get_records_from_fits(file_pulses, verbose=verbose)
+    _, _, pulse_list, pulse_times=dre_fits.read_records(file_pulses, verbose=verbose)
     print("  Record length = {0:4d}, reduced to {1:4d}".format(len(pulse_list[0]), record_length))
     delta=len(pulse_list[0])-record_length
     pulse_list=pulse_list[:, int(delta/2):record_length+int(delta/2)] # pulse records are longuer than noise records (by 2)
@@ -756,7 +717,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
 
     # Load pulse data containing the events to reconstruct
     print("  Loading measured pulse data from file ", file_measures)
-    _, _, pulse_list, _=get_records_from_fits(file_measures, verbose=verbose)
+    _, _, pulse_list, _=dre_fits.read_records(file_measures, verbose=verbose)
     print("  Record length = {0:4d}".format(len(pulse_list[0])))
 
     # Removing outlayers
@@ -847,6 +808,7 @@ def ep(fulldirname, config, verbose=False):
     file_xifusim_tes_noise = os.path.join(pixeldirname,"noise_spectra_bbfb_noFBDAC.fits")
 
     EP_filter_exist = False
+    eres_mean = np.inf
 
     # searching data files
     f_type_deb = 15

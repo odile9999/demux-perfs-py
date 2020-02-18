@@ -1,0 +1,1 @@
+npix=41 # number of pixels (includes the test pixel)

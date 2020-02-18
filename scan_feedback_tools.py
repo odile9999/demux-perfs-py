@@ -50,7 +50,7 @@ def get_scanfb(fulldirname, config):
         scanfbdata['Freq(kHz)']=scanfb['Frequency']
         scanfbdata['Mod(dB)']=scanfb['Module']
         scanfbdata['Phi(deg)']=scanfb['Phi']
-        scanfbdata['Phi-fit(deg)']=scanfb['Phi-fit']
+        scanfbdata['Phi-fit(deg)']=scanfb['delta']
         scanfbdata['I']=scanfb['I']
         scanfbdata['Q']=scanfb['Q']
     else:
