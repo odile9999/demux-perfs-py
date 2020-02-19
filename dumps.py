@@ -551,6 +551,8 @@ def crestfactor(signal, verbose=False):
 
     # searching for signal periodicity
     period=search_period(signal, verbose=verbose)
+    if period==0:
+        period=len(signal)
 
     peak = abs(signal[:period]).max()
     cf=peak / signal[:period].std()
@@ -1193,7 +1195,7 @@ def process_iq_multi(fulldirname, config, pix_zoom=40, window=False, bw_correcti
         print("Data processing is done.")
         print("{0:4d} corrupted files found.".format(errors_counter))
         print("{0:4d} files were too short for processing.".format(nb_short_files))
-        print("Doing the plots...", end='')
+        print("Doing the plots...")
     
         if not CHAN0_EMPTY:
             # Normalisation wrt each carrier
@@ -1591,16 +1593,18 @@ def search_period(sig, verbose=False):
 
         """
 
-    npts=len(sig)
-    period=npts
-    max_pow_two=np.floor(np.log(npts)/np.log(2))
-    pow_two=4
-    while pow_two<npts/2:
-        equal = (abs(sig[:pow_two]-sig[pow_two:pow_two*2]).max()==0)
-        if equal:
-            period=pow_two
-            break
-        pow_two=pow_two*2
+    period=0
+    i_max=np.where(sig==sig.max())[0]
+    if len(i_max)>1:
+        l=1
+        p=i_max[l]-i_max[0]
+        while l < len(i_max) and p < len(sig)/2:
+            equal = (abs(sig[:p]-sig[p:p*2])).max()==0
+            if equal:
+                period=p
+                break
+            l+=1
+            p=i_max[l]-i_max[0]
     if verbose:
         if period==0:
             print("This signal is not periodic")
