@@ -1598,13 +1598,16 @@ def search_period(sig, verbose=False):
     if len(i_max)>1:
         l=1
         p=i_max[l]-i_max[0]
-        while l < len(i_max) and p < len(sig)/2:
+        while p < len(sig)/2:
             equal = (abs(sig[:p]-sig[p:p*2])).max()==0
             if equal:
                 period=p
                 break
-            l+=1
-            p=i_max[l]-i_max[0]
+            if l < len(i_max)-1:
+                l+=1
+                p=i_max[l]-i_max[0]
+            else:
+                break
     if verbose:
         if period==0:
             print("This signal is not periodic")
@@ -1612,5 +1615,4 @@ def search_period(sig, verbose=False):
             print("The period of the signal is {0:5d} samples".format(period))
 
     return(period)
-
 # -----------------------------------------------------------------------
