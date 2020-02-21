@@ -238,6 +238,24 @@ def apply_phase_correction(energies,phase,phase_correction):
     return corrected_energies, phase_correc_poly
 
 # ############################################################
+# Function for drift correction
+# ############################################################
+def apply_drift_correction(energies,time,drift_correction):
+    '''Applies a phase correction
+    
+    Arguments:
+        - energies: input energies
+        - time: time data
+        - drift_correction: order of the drift correction polynom
+    '''
+    #Fit drift correction
+    drift_correc_poly_coeff = np.polyfit(time,energies,drift_correction)
+    drift_correc_poly = np.poly1d(drift_correc_poly_coeff)
+    energies_corrected=energies.copy()-drift_correc_poly(time)+energies.mean()
+    
+    return energies_corrected, drift_correc_poly
+
+# ############################################################
 # Function for baseline correction
 # ############################################################
 def apply_baseline_correction(energies,baseline,baseline_correction):
@@ -247,8 +265,6 @@ def apply_baseline_correction(energies,baseline,baseline_correction):
         - energies: input energies
         - baseline: baseline data
         - baseline_correction: order of the baseline correction polynom
-        - fig: figure id to include the phase correction plots
-        - i_subplot: index of the sub_plot in the figure
     '''
     #Fit baseline correction
     baseline_correc_poly_coeff = np.polyfit(baseline,energies,baseline_correction)
@@ -256,7 +272,6 @@ def apply_baseline_correction(energies,baseline,baseline_correction):
     energies_corrected=energies.copy()-baseline_correc_poly(baseline)+baseline_correc_poly(baseline.mean())
     
     return energies_corrected, baseline_correc_poly
-
 
 # ############################################################
 # Function to perform energy reconstruction
@@ -674,6 +689,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     """
     bcorr=3 # Order of polynomial baseline correction
     pcorr=8 # Order of polynomial arrival phase correction
+    dcorr=4 # Order of polynomial drift correction
     print('\nReconstructing pulses...')
 
     # Load pixel non-linearity factor from an information file
@@ -714,14 +730,6 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise,{0:6d} counts)'.format(len(energies)),plotfilename,file_measures)
 
-        fig = plt.figure(figsize=(8, 6))
-        ax1=fig.add_subplot(1, 1, 1)
-        ax1.plot(t_list, pulse_list)
-        ax1.set_title('Residual drift along time')
-        fig.tight_layout()
-        plt.savefig('er_drift_{0:d}.png'.format(index),bbox_inches='tight')
-
-
     # ############################################################
     # Pulse reconstruction with OF also containing TES noise
     # ############################################################
@@ -742,6 +750,11 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     energies_c_ph, ph_correct_poly1 = apply_phase_correction(energies_c_bl, phases, pcorr)
     coeffs3, array_to_fit3, bins3, axe_fit3, hist_fit3  = hist_and_fit((energies_c_ph-7)*1000, 100)
 
+    # Apply drift correction
+    energies_c_dr, dr_correct_poly1 = apply_drift_correction(energies_c_ph, time, dcorr)
+    coeffs4, array_to_fit4, bins4, axe_fit4, hist_fit4  = hist_and_fit((energies_c_dr-7)*1000, 100)
+    print('with drift correction:', coeffs4[2]*2.355*NONLINEAR_FACTOR)
+
     eres_tesnoise = coeffs3[2]*2.355*NONLINEAR_FACTOR
     print("Final resolution with TES noise (after phase correction): {0:5.3f}+-{1:5.3f}eV".format(eres_tesnoise,eres_tesnoise/(np.sqrt(2.*len(energies)))))
         
@@ -750,6 +763,16 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'b','(with TES noise,{0:6d} counts)'.format(len(energies)),plotfilename,file_measures)
+
+        plotdriftfilename=os.path.join(plotdirname,'er_drift_{0:d}.png'.format(index))
+        fig = plt.figure(figsize=(8, 6))
+        ax1=fig.add_subplot(1, 1, 1)
+        ax1.plot(t_list, (energies_c_ph-7)*1000,'.')
+        ax1.plot(t_list, (dr_correct_poly1(t_list)-7)*1000, 'r')
+        ax1.set_title('Residual drift along time')
+        fig.tight_layout()
+        plt.savefig(plotdriftfilename,bbox_inches='tight')
+
 
     # np.save('energies.npy', energies)
     return(eres_tesnoise, eres_tesnoise/(np.sqrt(2.*len(energies))))
