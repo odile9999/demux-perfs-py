@@ -68,7 +68,7 @@ def pulse_average(pulse_list,remove_outlayers=True):
         
     Returns: pulse_template 
         - pulse_template: template created from the average of detected pulses
-        - pulse_list: pulse list cleaned from the outlayers
+        - i_pulse_list: indexes of the pulse list cleaned from the outlayers
     """
     
     # Compute the average of the detected pulses and reject 1% worst if requested
@@ -78,43 +78,7 @@ def pulse_average(pulse_list,remove_outlayers=True):
         diff_list = np.sum(abs(pulse_list-mean_pulse),1)
         pulse_list = pulse_list[(diff_list<np.percentile(diff_list,99))]
             
-    return mean_pulse, pulse_list
-
-
-# ############################################################
-# Function to create pulse average
-# ############################################################
-def pulse_average_old(pulse_list,remove_outlayers=False):
-    """Creates pulse template from a set of pulses. Outlayers can be rejected.
-    
-    Arguments:
-        - pulse_list:
-        - remove_outlayers: if True outlayers are rejected
-        
-    Returns: pulse_template 
-        - pulse_template: template created from the average of detected pulses
-        - pulse_list: pulse list cleaned from the outlayers
-    """
-    satisfied=False
-    
-    # Iteratively compute the average of the detected pulses and reject 10% worst if requested
-    pulse_list = np.array(pulse_list)
-    while remove_outlayers and not satisfied:
-        mean_pulse = np.mean(pulse_list,0)
-        diff_list = np.sum(abs(pulse_list-mean_pulse),1)
-        plt.clf()
-        plt.plot(mean_pulse,label='Averaged pulse')
-        plt.plot(pulse_list[diff_list.argmax()],label='Worst outlayer in current process')
-        plt.title("Pulse averaging process")
-        plt.legend(loc="best", prop=dict(size=7))
-        plt.show(block=False)
-        answer = input("  Suppress 10% worst [y/n]?")
-        if answer=='y':
-            pulse_list = pulse_list[(diff_list<np.percentile(diff_list,90))]
-        else:
-            satisfied=True
-            
-    return mean_pulse, pulse_list
+    return mean_pulse, (diff_list<np.percentile(diff_list,99))
 
 
 # ############################################################
@@ -383,7 +347,8 @@ def do_EP_filter(file_noise, file_pulses, file_xifusim_template, file_xifusim_te
     pulse_list=pulse_list[:, int(delta/2):record_length+int(delta/2)] # pulse records are longuer than noise records (by 2)
 
     # Generate pulse template as average of detected pulses (and removing outlayers)
-    pulse_template, pulse_list = pulse_average(pulse_list,remove_outlayers=True)
+    pulse_template, i_pulse_list = pulse_average(pulse_list,remove_outlayers=True)
+    pulse_list=pulse_list[i_pulse_list]
     if verbose:
         print("  Pulse template: ",pulse_template)
 
@@ -717,12 +682,14 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
 
     # Load pulse data containing the events to reconstruct
     print("  Loading measured pulse data from file ", file_measures)
-    _, _, pulse_list, _=dre_fits.read_records(file_measures, verbose=verbose)
+    _, _, pulse_list, t_list=dre_fits.read_records(file_measures, verbose=verbose)
     print("  Record length = {0:4d}".format(len(pulse_list[0])))
 
     # Removing outlayers
-    _, pulse_list = pulse_average(pulse_list,remove_outlayers=True)
-        
+    _, i_pulse_list = pulse_average(pulse_list,remove_outlayers=True)
+    pulse_list=pulse_list[i_pulse_list]
+    t_list=t_list[i_pulse_list]
+
     # Compute first energy estimates
     energies,phases,baselines = energy_reconstruction(pulse_list, optimal_filter, PREBUFF, JITTER_MARGIN)
 
@@ -746,6 +713,13 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
         plot_er(NONLINEAR_FACTOR,array_to_fit1,bins1,coeffs1,axe_fit1,hist_fit1,baselines,energies,bl_correct_poly1,energies_c_bl, \
             array_to_fit2,bins2,coeffs2,axe_fit2,hist_fit2,phases,ph_correct_poly1,energies_c_ph,\
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'g','(no TES noise,{0:6d} counts)'.format(len(energies)),plotfilename,file_measures)
+
+        fig = plt.figure(figsize=(8, 6))
+        ax1=fig.add_subplot(1, 1, 1)
+        ax1.plot(t_list, pulse_list)
+        ax1.set_title('Residual drift along time')
+        fig.tight_layout()
+        plt.savefig('er_drift_{0:d}.png'.format(index),bbox_inches='tight')
 
 
     # ############################################################
