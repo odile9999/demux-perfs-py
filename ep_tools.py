@@ -751,7 +751,7 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
     coeffs3, array_to_fit3, bins3, axe_fit3, hist_fit3  = hist_and_fit((energies_c_ph-7)*1000, 100)
 
     # Apply drift correction
-    energies_c_dr, dr_correct_poly1 = apply_drift_correction(energies_c_ph, time, dcorr)
+    energies_c_dr, dr_correct_poly1 = apply_drift_correction(energies_c_ph, t_list, dcorr)
     coeffs4, array_to_fit4, bins4, axe_fit4, hist_fit4  = hist_and_fit((energies_c_dr-7)*1000, 100)
     print('with drift correction:', coeffs4[2]*2.355*NONLINEAR_FACTOR)
 
@@ -765,11 +765,18 @@ def measure_er(file_measures, optimal_filter, optimal_filter_tot, pixeldirname, 
             array_to_fit3,bins3,coeffs3,axe_fit3,hist_fit3,'b','(with TES noise,{0:6d} counts)'.format(len(energies)),plotfilename,file_measures)
 
         plotdriftfilename=os.path.join(plotdirname,'er_drift_{0:d}.png'.format(index))
-        fig = plt.figure(figsize=(8, 6))
-        ax1=fig.add_subplot(1, 1, 1)
+        fig = plt.figure(figsize=(8, 5))
+        ax1=fig.add_subplot(1, 2, 1)
         ax1.plot(t_list, (energies_c_ph-7)*1000,'.')
         ax1.plot(t_list, (dr_correct_poly1(t_list)-7)*1000, 'r')
         ax1.set_title('Residual drift along time')
+        ax1.set_ylabel('Energy delta (eV)')
+        ax1.set_xlabel('time (A.U.)')
+        ax2=fig.add_subplot(1, 2, 2)
+        ax2.plot(t_list, (energies_c_dr-7)*1000,'.')
+        ax2.set_title('After drift correction')
+        ax2.set_ylabel('Energy delta (eV)')
+        ax2.set_xlabel('time (A.U.)')
         fig.tight_layout()
         plt.savefig(plotdriftfilename,bbox_inches='tight')
 
