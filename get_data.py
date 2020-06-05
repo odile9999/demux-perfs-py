@@ -70,9 +70,23 @@ def readfile(dumpfilename, quiet=True):
     data=np.fromfile(fdat, dtype='<h')
     fdat.close()
         
-    DADA=-9510      # 0xDADA interpreted as int16
-    if data[0] != DADA:
-        raise ValueError('Problem with file format!')
+    dada=-9510      # 0xDADA interpreted as int16
+    ch0_id = 10880  # 0x802A interpreted as int16
+
+    if data[0] != dada:
+        print('Problem with file format!')
+        print(' Looking for beginning of file...')
+        i_start = np.where(data[:300]==dada)[0]
+        print(i_start)
+        if len(i_start)>1:
+            if data[i_start[0]+1]==ch0_id:
+                data=data[i_start[0]:]
+            else:
+                if data[i_start[1]+1]==ch0_id:
+                    data=data[i_start[1]:]
+                else:
+                    raise ValueError('Problem with file format!')
+    print(data[:4])
     header2=data[1].astype('uint16')
     header24=int(header2/2**12)
     header23=int((header2-header24*2**12)/2**8)
