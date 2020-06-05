@@ -36,6 +36,20 @@ def switch_bin2hexa(bin):
     return(hexa)
 
 ###############################################################################
+def switch_natbin2dec(bin):
+    r"""
+    This function makes the conversion from natural binary ascii to decimal ascci.
+    """
+
+    nbits=len(bin)
+    offset=0
+    dec=''
+    while offset<nbits:
+        dec=dec+bin[offset]*2**offset
+        offset+=1
+    return(dec)
+
+###############################################################################
 def dec2cad(dec, n):
     r"""
     This function computes the 2s complement binary value of an integer.
