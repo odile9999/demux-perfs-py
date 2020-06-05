@@ -186,7 +186,7 @@ def process_gbw(fulldirname, config, chan, margin_pc=5):
 
         # Fit of the transfer function and measurement of the GBP
         fit_params=fit_tools.low_pass_fit(f, a)
-        f_high_res = np.linspace(1, 1e6, num=1e5)
+        f_high_res = np.linspace(1, 1e6, num=100000)
         fit = fit_tools.low_pass(f_high_res, fit_params[0], fit_params[1])
         fit_db = 20*np.log10(fit/fit.max())
         gbw = 1./fit_params[1]
